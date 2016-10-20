@@ -9838,7 +9838,7 @@ show_one_bgp_neighbor(struct vty *vty, char *name,
     vty_out(vty, "    Configured timers: Keepalive %ld, Holdtime %ld\n",
         value_timers[1], value_timers[0]);
 
-    if (ovs_bgp_neighbor->n_negotiated_timers) {
+    if (ovs_bgp_neighbor->n_negotiated_timers == 2) {
         vty_out(vty, "    Negotiated timers: Keepalive %ld, Holdtime %ld\n\n",
                 ovs_bgp_neighbor->value_negotiated_timers[1],
                 ovs_bgp_neighbor->value_negotiated_timers[0]);
