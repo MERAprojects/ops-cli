@@ -430,6 +430,20 @@ get_bgp_neighbor_with_bgp_router_and_ipaddr(const struct ovsrec_bgp_router *
 }
 
 /*
+ * Find the bgp neighbor af with matching af*/
+static const struct ovsrec_bgp_neighbor_af *
+get_bgp_neighbor_af_with_neighbor_and_af(const struct ovsrec_bgp_neighbor *ovs_bgpn,
+                                         const char *af_str)
+{
+    int i = 0;
+    for (i = 0; i < ovs_bgpn->n_address_families; i++) {
+        if (0 == strcmp(ovs_bgpn->key_address_families[i], af_str))
+            return ovs_bgpn->value_address_families[i];
+    }
+    return NULL;
+}
+
+/*
  * Find the bgp peer group with matching bgp_router and name
  */
 static const struct ovsrec_bgp_neighbor *
@@ -3748,6 +3762,96 @@ DEFUN(no_neighbor_capability_orf_prefix,
     return CMD_SUCCESS;
 }
 
+
+void
+bgp_neighbor_af_insert_to_bgp_neighbor(const struct ovsrec_bgp_neighbor *bgpn,
+                                       const struct ovsrec_bgp_neighbor_af *new_af,
+                                       const char *af_name)
+{
+    struct ovsrec_bgp_neighbor_af **bgp_neighbor_af_list;
+    char **bgp_neighbor_af_name_list;
+    int i = 0;
+
+    bgp_neighbor_af_list =
+        xmalloc(80/*take max len*/ * (bgpn->n_address_families + 1));
+    bgp_neighbor_af_name_list =
+        xmalloc(sizeof *bgpn->value_address_families *
+                              (bgpn->n_address_families + 1));
+    for (i = 0; i < bgpn->n_address_families; i++) {
+        bgp_neighbor_af_name_list[i] =
+            bgpn->key_address_families[i];
+        bgp_neighbor_af_list[i] =
+            bgpn->value_address_families[i];
+    }
+    bgp_neighbor_af_name_list[bgpn->n_address_families] =
+                                                    CONST_CAST(char *, af_name);
+    bgp_neighbor_af_list[bgpn->n_address_families] =
+        CONST_CAST(struct ovsrec_bgp_neighbor_af *, new_af);
+    ovsrec_bgp_neighbor_set_address_families(bgpn,
+                                        bgp_neighbor_af_name_list,
+                                        bgp_neighbor_af_list,
+                                        (bgpn->n_address_families + 1));
+    free(bgp_neighbor_af_list);
+    free(bgp_neighbor_af_name_list);
+}
+
+
+static int
+cli_neighbor_next_hop_self_cmd_execute(struct vty *vty,
+                                       char *vrf_name,
+                                       const char *ip_addr,
+                                       bool enable)
+{
+    const struct ovsrec_vrf *vrf_row;
+    const struct ovsrec_bgp_router *bgp_router_context;
+    const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor;
+    const struct ovsrec_bgp_neighbor_af *ovs_bgp_neighbor_af;
+    struct ovsdb_idl_txn *txn;
+
+    START_DB_TXN(txn);
+
+    vrf_row = get_ovsrec_vrf_with_name(vrf_name);
+    if (vrf_row == NULL) {
+        ERRONEOUS_DB_TXN(txn, "no vrf found");
+    }
+
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
+                                                        (int64_t)vty->index);
+    if (bgp_router_context) {
+        ovs_bgp_neighbor =
+        get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context,ip_addr);
+        if (ovs_bgp_neighbor) {
+
+            /* This may or may not be present. */
+            ovs_bgp_neighbor_af = get_bgp_neighbor_af_with_neighbor_and_af(ovs_bgp_neighbor,
+                                                                           OVSREC_BGP_NEIGHBOR_ADDRESS_FAMILIES_DEFAULT);
+            if (!ovs_bgp_neighbor_af) {
+                ovs_bgp_neighbor_af = ovsrec_bgp_neighbor_af_insert(txn);
+                if (!ovs_bgp_neighbor_af) {
+                    ERRONEOUS_DB_TXN(txn, "bgp neighbor object creation failed");
+                }
+            }
+            /* Add af reference to the BGP Neighbor table. */
+            bgp_neighbor_af_insert_to_bgp_neighbor(ovs_bgp_neighbor,
+                                                   ovs_bgp_neighbor_af,
+                                                   OVSREC_BGP_NEIGHBOR_ADDRESS_FAMILIES_DEFAULT);
+
+        } else {
+            ABORT_DB_TXN(txn, "no neighbor");
+        }
+    } else {
+        ERRONEOUS_DB_TXN(txn, "bgp router context not available");
+    }
+
+    ovsrec_bgp_neighbor_af_set_next_hop_self (ovs_bgp_neighbor_af,
+                                              &enable, 1);
+
+
+    /* Done */
+    END_DB_TXN(txn);
+}
+
+
 /* Neighbor next-hop-self. */
 DEFUN(neighbor_nexthop_self,
       neighbor_nexthop_self_cmd,
@@ -3755,10 +3859,12 @@ DEFUN(neighbor_nexthop_self,
       NEIGHBOR_STR
       NEIGHBOR_ADDR_STR2
       "Disable the next hop calculation for this neighbor\n"
-      "Apply also to ibgp-learned routes when acting as a route reflector\n")
+      "NOT SUPPORTED: Apply also to ibgp-learned routes when acting as a route reflector\n")
 {
-    report_unimplemented_command(vty, argc, argv);
-    return CMD_SUCCESS;
+    return cli_neighbor_next_hop_self_cmd_execute(vty/*for node*/,
+                                                  NULL/*vrf*/,
+                                                  argv[0] /*ip addr*/,
+                                                  true);
 }
 
 DEFUN(no_neighbor_nexthop_self,
@@ -3768,10 +3874,12 @@ DEFUN(no_neighbor_nexthop_self,
       NEIGHBOR_STR
       NEIGHBOR_ADDR_STR2
       "Disable the next hop calculation for this neighbor\n"
-      "Apply also to ibgp-learned routes when acting as a route reflector\n")
+      "NOT SUPPORTED: Apply also to ibgp-learned routes when acting as a route reflector\n")
 {
-    report_unimplemented_command(vty, argc, argv);
-    return CMD_SUCCESS;
+    return cli_neighbor_next_hop_self_cmd_execute(vty/*for node*/,
+                                                  NULL/*vrf*/,
+                                                  argv[0] /*ip addr*/,
+                                                  false);
 }
 
 static int
@@ -10022,6 +10130,20 @@ show_one_bgp_neighbor(struct vty *vty, char *name,
                     ovs_bgp_neighbor->value_statistics[i]);
        }
     }
+
+
+  /************************************
+   ****** Per AF to the neighbor ******
+   ************************************/
+    vty_out(vty, "    AF parameters:\n");
+    for (i = 0; i < ovs_bgp_neighbor->n_address_families; i++)
+    {
+        vty_out(vty, "        family: %s\n", ovs_bgp_neighbor->key_address_families[i]);
+
+        vty_out(vty, "            next-hop-self: %s\n",
+            ovs_bgp_neighbor->value_address_families[i]->n_next_hop_self ? (*(ovs_bgp_neighbor->value_address_families[i]->next_hop_self) ? "true" : "false") : "false");
+    }
+
     vty_out(vty,"\n");
 }
 
