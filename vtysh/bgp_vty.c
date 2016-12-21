@@ -3398,6 +3398,8 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
     const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor;
     const struct ovsrec_bgp_neighbor *ovs_bgp_peer_group;
     struct ovsdb_idl_txn *txn;
+    char *key_timers[2];
+    timer_val_t  tim_val;
 
     START_DB_TXN(txn);
 
@@ -3451,7 +3453,22 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
         }
     }
 
-/* If peer group has a remote-as, it becomes primary. */
+    /* Synchronize peer timers with group timers. */
+    key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
+    key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
+
+    if (!ovs_bgp_peer_group->n_timers) {
+    /* If peer-group timers are default */
+        tim_val.keepalive = 0;
+        tim_val.holdtime = 0;
+    } else {
+        memcpy(&tim_val, ovs_bgp_peer_group->value_timers, sizeof(tim_val));
+    }
+
+    ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
+                                       (int64_t *)&tim_val,0);
+
+    /* If peer group has a remote-as, it becomes primary. */
     if (ovs_bgp_peer_group->n_remote_as > 0) {
         ovsrec_bgp_neighbor_set_remote_as(ovs_bgp_neighbor,
                                           ovs_bgp_peer_group->remote_as, 1);
@@ -5082,11 +5099,32 @@ DEFUN(no_neighbor_strict_capability,
     return CMD_SUCCESS;
 }
 
+static void
+neighbor_set_timers(const struct ovsrec_bgp_neighbor *bgpn, timer_val_t *tim_values, int tim_number)
+{
+    const struct ovsrec_bgp_neighbor *bgpn_peer_group, *bgpn_next;
+    char *key_timers[2];
+    key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
+    key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
+
+    ovsrec_bgp_neighbor_set_timers(bgpn, key_timers,
+                                           (int64_t *)tim_values, tim_number);
+
+    if (object_is_bgp_peer_group(bgpn)) {
+        bgpn_peer_group = bgpn;
+        OVSREC_BGP_NEIGHBOR_FOR_EACH_SAFE(bgpn, bgpn_next, idl) {
+            if (object_is_neighbor(bgpn) && (bgpn->bgp_peer_group == bgpn_peer_group)) {
+                ovsrec_bgp_neighbor_set_timers(bgpn, key_timers,
+                                              (int64_t*)tim_values, tim_number);
+            }
+        }
+    }
+}
+
 static int
 cli_neighbor_timers_execute(char *vrf_name, int argc, const char *argv[])
 {
     const char *ip_addr = argv[0];
-    char *key_timers[2];
     timer_val_t tim_val;
     const struct ovsrec_vrf *vrf_row;
     const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor;
@@ -5117,16 +5155,26 @@ cli_neighbor_timers_execute(char *vrf_name, int argc, const char *argv[])
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, "bgp router context not available");
     }
-        ovs_bgp_neighbor =
+
+    ovs_bgp_neighbor =
     get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context, ip_addr);
 
     if (ovs_bgp_neighbor) {
-        key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
-        key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
-        /* To write to ovsdb nbr table. */
-        ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
-                                       (int64_t *)&tim_val, 2);
+        if (ovs_bgp_neighbor->bgp_peer_group) {
+            VLOG_ERR(OVSDB_TXN_COMMIT_ERROR);
+            VLOG_ERR("Error in transaction for setting timers of neighbor."
+                     "Neighbor %s already has been assigned to the peer group.\n",
+                                                                        argv[0]);
+            ERRONEOUS_DB_TXN(txn, "%% Unable to set timers. Neighbor already has been"
+	                                              " assigned to the peer group.");
+	} else {
+            /* To write to ovsdb nbr table. */
+	    neighbor_set_timers(ovs_bgp_neighbor, &tim_val, 2);
+        }
+    } else {
+        ERRONEOUS_DB_TXN(txn, "Neighbor not found");
     }
+
     END_DB_TXN(txn);
 
 }
@@ -5157,7 +5205,6 @@ DEFUN(no_neighbor_timers,
       "BGP per neighbor timers\n")
 {
     const char *ip_addr = argv[0];
-    char *key_timers[2];
     timer_val_t tim_val;
     const struct ovsrec_vrf *vrf_row;
     const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor;
@@ -5182,13 +5229,21 @@ DEFUN(no_neighbor_timers,
     get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context, ip_addr);
 
     if (ovs_bgp_neighbor) {
-        key_timers[0] = "Keepalive";
-        key_timers[1] = "Holdtimer";
-        tim_val.keepalive = 0;
-        tim_val.holdtime = 0;
-        /* To write to ovsdb nbr table. */
-        ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
-                                       (int64_t *)&tim_val,0);
+        if (ovs_bgp_neighbor->bgp_peer_group) {
+	    VLOG_ERR(OVSDB_TXN_COMMIT_ERROR);
+            VLOG_ERR("Error in transaction for setting timers of neighbor."
+                     "Neighbor %s already has been assigned to the peer group.\n",
+                                                                        argv[0]);
+            ERRONEOUS_DB_TXN(txn, "%% Unable to set timers. Neighbor already has been"
+	                                              " assigned to the peer group.");
+        } else {
+            tim_val.keepalive = 0;
+            tim_val.holdtime = 0;
+            /* To write to ovsdb nbr table. */
+            neighbor_set_timers(ovs_bgp_neighbor, &tim_val, 0);
+        }
+    } else {
+        ERRONEOUS_DB_TXN(txn, "Neighbor not found");
     }
     END_DB_TXN(txn);
 
