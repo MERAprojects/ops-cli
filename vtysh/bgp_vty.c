@@ -3383,6 +3383,62 @@ DEFUN(no_neighbor_activate,
 }
 
 /*
+ * Set parameters bgp timers in accordance with values for existing neighbor.
+ */
+static void
+bgp_neighbor_param_timers(const struct ovsrec_bgp_neighbor *bgp_peer,
+                          timer_val_t *tim_val)
+{
+    if (bgp_peer) {
+    
+        int i;
+    
+        for (i = 0; i < bgp_peer->n_timers; i++) {
+            if (!strcmp(OVSDB_BGP_TIMER_KEEPALIVE, bgp_peer->key_timers[i])) {
+                tim_val->keepalive = bgp_peer->value_timers[i];
+                tim_val->holdtime = (tim_val->keepalive < (tim_val->holdtime / 3)
+                                    ? tim_val->holdtime : (tim_val->keepalive * 3));
+                break;
+            }                            
+        }           
+    
+        for (i = 0; i < bgp_peer->n_timers; i++) {
+            if (!strcmp(OVSDB_BGP_TIMER_HOLDTIME, bgp_peer->key_timers[i])) {
+                tim_val->holdtime = bgp_peer->value_timers[i];
+                tim_val->keepalive = (tim_val->keepalive < (tim_val->holdtime / 3)
+                                     ? tim_val->keepalive : (tim_val->holdtime / 3));
+                break;
+            }                
+        }            
+    }        
+}                          
+                                   
+/*
+ * Synchronization values of neighbor parameters, when included in group.
+ */
+static void
+bgp_sync_param_neighbor_with_group(const struct ovsrec_bgp_neighbor *bgp_neighbor,
+                                   const struct ovsrec_bgp_neighbor *bgp_peer_group)
+{
+    if (bgp_neighbor && bgp_peer_group) {
+    
+        /* Bgp timers */
+        timer_val_t tim_val;
+        char *key_timers[2];
+
+        key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
+        key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
+        memset(&tim_val, 0, sizeof(timer_val_t));
+        
+        bgp_neighbor_param_timers(bgp_neighbor, &tim_val);
+        bgp_neighbor_param_timers(bgp_peer_group, &tim_val);
+        
+        ovsrec_bgp_neighbor_set_timers(bgp_neighbor, key_timers,
+                                       (int64_t*)&tim_val, 2);
+    }    
+}
+                                   
+/*
  * If the peer does not exist, create it first and then bind it
  * to the peer group.  If it already exists, it must not already
  * be bound to another peer group.  Also, the peer group MUST
@@ -3464,6 +3520,9 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
     /* Make this peer bound to the peer group. */
     ovsrec_bgp_neighbor_set_bgp_peer_group(ovs_bgp_neighbor,
                                            ovs_bgp_peer_group);
+    /* Synchronization values of neighbor parameters. */
+    bgp_sync_param_neighbor_with_group(ovs_bgp_neighbor,
+                                       ovs_bgp_peer_group);  
     /* Done. */
     END_DB_TXN(txn);
 }
@@ -5092,6 +5151,8 @@ cli_neighbor_timers_execute(char *vrf_name, int argc, const char *argv[])
     const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor;
     const struct ovsrec_bgp_router *bgp_router_context;
     struct ovsdb_idl_txn *txn;
+    const struct ovsrec_bgp_neighbor *ovs_bgp_peer_group;
+    bool is_group;
 
     VTY_GET_INTEGER_RANGE ("Keepalive", tim_val.keepalive, argv[1], 0, 65535);
     VTY_GET_INTEGER_RANGE ("Holdtime", tim_val.holdtime, argv[2], 0, 65535);
@@ -5124,8 +5185,25 @@ cli_neighbor_timers_execute(char *vrf_name, int argc, const char *argv[])
         key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
         key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
         /* To write to ovsdb nbr table. */
+        is_group = object_is_bgp_peer_group(ovs_bgp_neighbor);
+        
+        if (!is_group) {       
+            bgp_neighbor_param_timers(ovs_bgp_neighbor->bgp_peer_group,
+                                      &tim_val);
+        }                        
+        
         ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
-                                       (int64_t *)&tim_val, 2);
+                                       (int64_t*)&tim_val, 2);
+                                   
+        if (is_group) {
+            ovs_bgp_peer_group = ovs_bgp_neighbor;
+            OVSREC_BGP_NEIGHBOR_FOR_EACH(ovs_bgp_neighbor, idl) {
+                if (ovs_bgp_neighbor->bgp_peer_group == ovs_bgp_peer_group) {
+                    ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
+                                                   (int64_t*)&tim_val, 2);
+                }                                                      
+            }
+        }
     }
     END_DB_TXN(txn);
 
