@@ -3398,6 +3398,8 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
     const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor;
     const struct ovsrec_bgp_neighbor *ovs_bgp_peer_group;
     struct ovsdb_idl_txn *txn;
+    char *key_timers[2];
+    timer_val_t tim_val;
 
     START_DB_TXN(txn);
 
@@ -3449,6 +3451,14 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
                                       "Deconfigure first");
             }
         }
+	/* Set default timers for nbr. */
+	key_timers[0] = "Keepalive";
+        key_timers[1] = "Holdtimer";
+        tim_val.keepalive = 0;
+        tim_val.holdtime = 0;
+        /* To write to ovsdb nbr table. */
+        ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
+                                       (int64_t *)&tim_val,0);
     }
 
 /* If peer group has a remote-as, it becomes primary. */
@@ -5117,16 +5127,23 @@ cli_neighbor_timers_execute(char *vrf_name, int argc, const char *argv[])
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, "bgp router context not available");
     }
-        ovs_bgp_neighbor =
+
+    ovs_bgp_neighbor =
     get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context, ip_addr);
 
     if (ovs_bgp_neighbor) {
-        key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
-        key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
-        /* To write to ovsdb nbr table. */
-        ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
-                                       (int64_t *)&tim_val, 2);
+        if (ovs_bgp_neighbor->bgp_peer_group) {
+            vty_out(vty, "%% Unable to set timers. Neighbor already has been"
+                                  " assigned to the peer group.%s", VTY_NEWLINE);
+        } else {
+            key_timers[0] = OVSDB_BGP_TIMER_KEEPALIVE;
+            key_timers[1] = OVSDB_BGP_TIMER_HOLDTIME;
+            /* To write to ovsdb nbr table. */
+            ovsrec_bgp_neighbor_set_timers(ovs_bgp_neighbor, key_timers,
+                                           (int64_t *)&tim_val, 2);
+        }
     }
+
     END_DB_TXN(txn);
 
 }
