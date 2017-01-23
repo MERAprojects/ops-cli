@@ -168,12 +168,12 @@ bgp_ovsdb_init()
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_tcp_port_number);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_advertisement_interval);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_maximum_prefix_limit);
-    ovsdb_idl_add_column(idl,
-                         &ovsrec_bgp_neighbor_col_inbound_soft_reconfiguration);
+    ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_inbound_soft_reconfiguration);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_remove_private_as);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_passive);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_password);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_timers);
+    ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_negotiated_timers);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_route_maps);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_prefix_lists);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_aspath_filters);
@@ -184,6 +184,11 @@ bgp_ovsdb_init()
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_ebgp_multihop);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_ttl_security_hops);
     ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_update_source);
+    ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_col_address_families);
+
+    /* BGP neighbor AF table. */
+    ovsdb_idl_add_table(idl, &ovsrec_table_bgp_neighbor_af);
+    ovsdb_idl_add_column(idl, &ovsrec_bgp_neighbor_af_col_next_hop_self);
 
     /* RIB. */
     ovsdb_idl_add_table(idl, &ovsrec_table_route);

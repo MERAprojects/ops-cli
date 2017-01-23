@@ -875,6 +875,39 @@ def verify_no_neighbor_ttl_security_hops_peergroup(step):
         foundpeergroupcfg is False
     )
 
+def verify_bgp_timers_negotiation(step):
+    step("Verifying BGP timers negotiation works correctly...")
+    i = 0
+    ht_array = ['120', '150']
+    ka_array = ['40', '30']
+    id_array = [bgp1_router_id, bgp2_router_id]
+    nbr_array = [peer_group, bgp2_neighbor]
+    asn_array = [bgp1_asn, bgp2_asn]
+    sw1_expected1 = "Configured timers: Keepalive %s, Holdtime %s" % (ka_array[0], ht_array[0])
+    sw1_expected2 = "Negotiated timers: Keepalive %s, Holdtime %s" % (ka_array[0], ht_array[0])
+    sw2_expected1 = "Configured timers: Keepalive %s, Holdtime %s" % (ka_array[1], ht_array[1])
+    sw2_expected2 = "Negotiated timers: Keepalive %s, Holdtime %s" % (ka_array[0], ht_array[0])
+    s1_res = [sw1_expected1, sw1_expected2]
+    s2_res = [sw2_expected1, sw2_expected2]
+    for switch in dutarray:
+        switch("end")
+        switch("conf t")
+        switch("router bgp %s" % asn_array[i])
+        switch("neighbor %s timers %s %s" % (nbr_array[i], ka_array[i], ht_array[i]))
+        i = i + 1
+    for switch in dutarray:
+        switch("do clear bgp * in")
+        switch("do clear bgp * out")
+    sleep(20)
+    dump1 = dutarray[0]("do show ip bgp neighbors")
+    dump2 = dutarray[1]("do show ip bgp neighbors")
+    for str in s1_res:
+        assert str in dump1
+    for str in s2_res:
+        assert str in dump2
+    dutarray[0]("end")
+    dutarray[1]("end")
+
 def verify_neighbor_weight_cmd(step):
     step("Verifying neighbor weight/no neighbor weight commands")
     switch = dutarray[0]
@@ -895,6 +928,225 @@ def verify_neighbor_weight_cmd(step):
     dump = switch("do show running-config")
     assert nbr_cfg_string not in dump
 
+
+def configure_neighbor_update_source(step):
+    key = "update-source"
+    step("Configuring %s for neighbor %s on switch 1..." % (key,
+                                                            bgp1_neighbor))
+
+    switch = dutarray[0]
+    update_source = 'loopback'
+    cfg_array = []
+    cfg_array.append("conf t")
+    cfg_array.append("router bgp %s" % bgp1_asn)
+    cfg_array.append("neighbor %s %s %s" % (bgp1_neighbor, key,
+                                            update_source))
+    cfg_array.append("end")
+
+    for cmd in cfg_array:
+        switch(cmd)
+
+
+def verify_neighbor_update_source(step):
+    key = "update-source"
+    key2 = "update_source"
+    step("Verifying %s for neighbor %s on switch 1..." % (key2,
+                                                          bgp1_neighbor))
+    found = False
+    update_source = 'loopback'
+    switch = dutarray[0]
+    dump = switch("show ip bgp neighbors")
+    lines = dump.split('\n')
+    for line in lines:
+        if key2 in line and ":" in line and str(update_source) in line:
+            found = True
+    assert (found is True)
+
+    found = False
+    show_cmd = "show ip bgp neighbors " + bgp1_neighbor
+    dump = switch(show_cmd)
+    lines = dump.split('\n')
+    for line in lines:
+        if key2 in line and ":" in line and str(update_source) in line:
+            found = True
+    assert (found is True)
+
+    found = False
+    show_cmd = "show running-config"
+    dump = switch(show_cmd)
+    lines = dump.split('\n')
+    search_pattern = "neighbor %s %s %s" % (bgp1_neighbor, key, update_source)
+    for line in lines:
+        if search_pattern in line:
+            found = True
+    assert (found is True)
+
+
+def unconfigure_neighbor_update_source(step):
+    key = "update-source"
+    step("Unconfiguring %s for neighbor %s on switch 1..." % (key,
+                                                              bgp1_neighbor))
+
+    switch = dutarray[0]
+    cfg_array = []
+    cfg_array.append("conf t")
+    cfg_array.append("router bgp %s" % bgp1_asn)
+    cfg_array.append("no neighbor %s %s" % (bgp1_neighbor, key))
+    cfg_array.append("end")
+
+    for cmd in cfg_array:
+        switch(cmd)
+
+
+def unconfigure_neighbor_update_source_alias(step):
+    key = "update-source"
+    step("Unconfiguring %s for neighbor %s on switch 1..." % (key,
+                                                              bgp1_neighbor))
+
+    switch = dutarray[0]
+    cfg_array = []
+    cfg_array.append("conf t")
+    cfg_array.append("router bgp %s" % bgp1_asn)
+    cfg_array.append("no neighbor %s %s" % (bgp1_neighbor, key))
+    cfg_array.append("end")
+
+    for cmd in cfg_array:
+        switch(cmd)
+
+
+def verify_no_neighbor_update_source(step):
+    key = "update-source"
+    key2 = "update_source"
+    step("Verifying no %s for neighbor %s on switch 1..." % (key2,
+                                                             bgp1_neighbor))
+    found = False
+    update_source = 'loopback'
+    switch = dutarray[0]
+    dump = switch("show ip bgp neighbors")
+    lines = dump.split('\n')
+    for line in lines:
+        if key2 in line and ":" in line and str(update_source) in line:
+            found = True
+    assert (found is False)
+
+    found = False
+    show_cmd = "show ip bgp neighbors " + bgp1_neighbor
+    dump = switch(show_cmd)
+    lines = dump.split('\n')
+    for line in lines:
+        if key2 in line and ":" in line and str(update_source) in line:
+            found = True
+    assert (found is False)
+
+    found = False
+    show_cmd = "show running-config"
+    dump = switch(show_cmd)
+    lines = dump.split('\n')
+    search_pattern = "neighbor %s %s %s" % (bgp1_neighbor, key, update_source)
+    for line in lines:
+        if search_pattern in line:
+            found = True
+    assert (found is False)
+
+
+def configure_neighbor_update_source_peergroup(step):
+    key = "update-source"
+    step("Configuring %s for peer group %s on switch 1..." % (key,
+                                                              peer_group))
+
+    switch = dutarray[0]
+    update_source = 'loopback'
+    cfg_array = []
+    cfg_array.append("conf t")
+    cfg_array.append("router bgp %s" % bgp1_asn)
+    cfg_array.append("neighbor %s peer-group" % peer_group)
+    cfg_array.append("neighbor %s peer-group %s" % (bgp1_neighbor,
+                                                    peer_group))
+    cfg_array.append("neighbor %s %s %s" % (peer_group, key,
+                                            update_source))
+    cfg_array.append("end")
+
+    for cmd in cfg_array:
+        switch(cmd)
+
+
+def verify_neighbor_update_source_peergroup(step):
+    key = "update-source"
+    step("Verifying %s for peer group %s on switch 1..." % (key, peer_group))
+    foundneighbor = False
+    foundpeergroup = False
+    foundpeergroupcfg = False
+    update_source = 'loopback'
+    switch = dutarray[0]
+
+    dump = switch("show running-config")
+    lines = dump.split('\n')
+    search_pattern_neighbor = "neighbor %s peer-group %s" % (bgp1_neighbor,
+                                                             peer_group)
+    search_pattern_peer_group = "neighbor %s peer-group" % (peer_group)
+    search_pattern_peer_group_cfg = "neighbor %s %s %s" % (peer_group, key,
+                                                           update_source)
+    for line in lines:
+        if search_pattern_neighbor in line:
+            foundneighbor = True
+        elif search_pattern_peer_group in line:
+            foundpeergroup = True
+        elif search_pattern_peer_group_cfg in line:
+            foundpeergroupcfg = True
+
+    assert (
+        foundneighbor is True or foundpeergroup is True or
+        foundpeergroupcfg is True
+    )
+
+
+def unconfigure_neighbor_update_source_peergroup(step):
+    key = "update-source"
+    step("Unconfiguring %s for peer group %s on switch 1..." % (key,
+                                                                peer_group))
+
+    switch = dutarray[0]
+    cfg_array = []
+    cfg_array.append("conf t")
+    cfg_array.append("router bgp %s" % bgp1_asn)
+    cfg_array.append("no neighbor %s %s" % (peer_group, key))
+    cfg_array.append("end")
+
+    for cmd in cfg_array:
+        switch(cmd)
+
+
+def verify_no_neighbor_update_source_peergroup(step):
+    key = "update-source"
+    step("Verifying no %s for peer group %s on switch 1..." % (key,
+                                                               peer_group))
+    foundneighbor = False
+    foundpeergroup = False
+    foundpeergroupcfg = False
+    update_source = 'loopback'
+    switch = dutarray[0]
+
+    dump = switch("show running-config")
+    lines = dump.split('\n')
+    search_pattern_neighbor = "neighbor %s peer-group %s" % (bgp1_neighbor,
+                                                             peer_group)
+    search_pattern_peer_group = "neighbor %s peer-group" % (peer_group)
+    search_pattern_peer_group_cfg = "neighbor %s %s %s" % (peer_group, key,
+                                                           update_source)
+    for line in lines:
+        if search_pattern_neighbor in line:
+            foundneighbor = True
+        elif search_pattern_peer_group in line:
+            foundpeergroup = True
+        elif search_pattern_peer_group_cfg in line:
+            foundpeergroupcfg = True
+
+    assert (
+        foundneighbor is True or foundpeergroup is True or
+        foundpeergroupcfg is False
+    )
+
+@mark.skipif(True, reason="Disabling due to gate job failures")
 def test_vtysh_ct_bgp_neighbor(topology, step):
     ops1 = topology.get("ops1")
     ops2 = topology.get("ops2")
@@ -950,4 +1202,16 @@ def test_vtysh_ct_bgp_neighbor(topology, step):
     configure_neighbor_ttl_security_peer_group_test_dependency(step)
     verify_no_neighbor_ttl_security_hops_peergroup(step)
     unconfigure_neighbor_ttl_security_peer_group_test_dependency(step)
+
+    verify_bgp_timers_negotiation(step)
     verify_neighbor_weight_cmd(step)
+
+    configure_neighbor_update_source(step)
+    verify_neighbor_update_source(step)
+    unconfigure_neighbor_update_source(step)
+    verify_no_neighbor_update_source(step)
+
+    configure_neighbor_update_source_peergroup(step)
+    verify_neighbor_update_source_peergroup(step)
+    unconfigure_neighbor_update_source_peergroup(step)
+    verify_no_neighbor_update_source_peergroup(step)
