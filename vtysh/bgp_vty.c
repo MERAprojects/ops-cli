@@ -228,10 +228,10 @@ bgp_regcomp (const char *regstr)
 
     for (i = 0, j = 0; i < len; i++) {
         if (regstr[i] == '_') {
-	    memcpy (magic_str + j, magic_regexp, strlen (magic_regexp));
-	    j += strlen (magic_regexp);
-	} else {
-	    magic_str[j++] = regstr[i];
+            memcpy (magic_str + j, magic_regexp, strlen (magic_regexp));
+            j += strlen (magic_regexp);
+        } else {
+            magic_str[j++] = regstr[i];
         }
     }
 
@@ -900,7 +900,7 @@ DEFUN(vtysh_show_ip_bgp_route_map,
                          set_table[idx].table_key);
                      if (value) {
                          vty_out(vty, "%4s %s : %s %s",
-		                 "", set_table[idx].table_key, value,
+                                 "", set_table[idx].table_key, value,
                                  VTY_NEWLINE);
                      }
                  }
@@ -2733,17 +2733,18 @@ cli_neighbor_remote_as_cmd_execute(char *vrf_name, struct vty *vty,
                                                     peer_str);
     if (ovs_bgp_neighbor) {
         if (ovs_bgp_neighbor->bgp_peer_group) {
-        char error_message[128];
-        name = xmalloc(sizeof(*bgp_router_context->key_bgp_neighbors));
-        for (i = 0; i < bgp_router_context->n_bgp_neighbors; i++) {
-            if (bgp_router_context->value_bgp_neighbors[i] == ovs_bgp_neighbor){
-                name = bgp_router_context->key_bgp_neighbors[i];
+            char error_message[128];
+            for (i = 0; i < bgp_router_context->n_bgp_neighbors; i++) {
+                if (ovs_bgp_neighbor->bgp_peer_group ==
+                    bgp_router_context->value_bgp_neighbors[i]) {
+                    name = bgp_router_context->key_bgp_neighbors[i];
+                    snprintf(error_message, sizeof(error_message) - 1,
+                             "%% Bound to peer group %s already, "
+                             "cannot change remote-as for member.\n", name);
+                    break;
+                }
             }
-        }
-        sprintf(error_message, "%% Bound to peer group %s already, "
-                "cannot change remote-as\n",name);
-        free(name);
-        ABORT_DB_TXN(txn, error_message);
+            ABORT_DB_TXN(txn, error_message);
         }
     } else {
         ovs_bgp_neighbor = ovsrec_bgp_neighbor_insert(txn);
