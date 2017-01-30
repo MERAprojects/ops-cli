@@ -2669,6 +2669,7 @@ bgp_neighbor_peer_group_insert_to_bgp_router(const struct ovsrec_bgp_router *
     char **bgp_neighbor_peer_name_list;
     int i = 0;
 
+    /* Allocate memory for new list with neighbor going to be added */
     bgp_neighbor_peer_name_list =
         xmalloc(80 * (bgp_router_context->n_bgp_neighbors + 1));
     bgp_neighbor_peer_group_list =
@@ -2933,6 +2934,7 @@ bgp_neighbor_remove_for_matching_peer_group_from_bgp_router(
     char **bgp_neighbor_peer_name_list;
     int i, j;
 
+    /* Allocate memory for new list without neighbor going to be deleted */
     bgp_neighbor_peer_name_list =
         xmalloc(80 * (bgp_router_context->n_bgp_neighbors - 1));
     bgp_neighbor_peer_group_list =
@@ -2940,7 +2942,7 @@ bgp_neighbor_remove_for_matching_peer_group_from_bgp_router(
                 (bgp_router_context->n_bgp_neighbors - 1));
 
     for (i = 0, j = 0; i < bgp_router_context->n_bgp_neighbors; i++) {
-        if (bgp_router_context->value_bgp_neighbors[i] == ovs_bgp_neighbor) {
+        if (bgp_router_context->value_bgp_neighbors[i] != ovs_bgp_neighbor) {
             bgp_neighbor_peer_name_list[j] =
                 bgp_router_context->key_bgp_neighbors[i];
             bgp_neighbor_peer_group_list[j] =
@@ -2951,8 +2953,7 @@ bgp_neighbor_remove_for_matching_peer_group_from_bgp_router(
     ovsrec_bgp_router_set_bgp_neighbors(bgp_router_context,
                                         bgp_neighbor_peer_name_list,
                                         bgp_neighbor_peer_group_list,
-                                        (bgp_router_context->n_bgp_neighbors -
-                                        1));
+                                        (bgp_router_context->n_bgp_neighbors - 1));
     free(bgp_neighbor_peer_name_list);
     free(bgp_neighbor_peer_group_list);
 }
@@ -2966,8 +2967,9 @@ bgp_neighbor_peer_group_remove_from_bgp_router(const struct ovsrec_bgp_router *
 {
     struct ovsrec_bgp_neighbor **bgp_neighbor_peer_group_list;
     char **bgp_neighbor_peer_name_list;
-    int i = 0, j = 0;
+    int i, j;
 
+    /* Allocate memory for new list without neighbor going to be deleted */
     bgp_neighbor_peer_name_list =
         xmalloc(80 * (bgp_router_context->n_bgp_neighbors - 1));
     bgp_neighbor_peer_group_list =
@@ -2982,11 +2984,11 @@ bgp_neighbor_peer_group_remove_from_bgp_router(const struct ovsrec_bgp_router *
             j++;
         }
     }
+
     ovsrec_bgp_router_set_bgp_neighbors(bgp_router_context,
                                         bgp_neighbor_peer_name_list,
                                         bgp_neighbor_peer_group_list,
-                                        (bgp_router_context->n_bgp_neighbors -
-                                        1));
+                                        (bgp_router_context->n_bgp_neighbors - 1));
     free(bgp_neighbor_peer_name_list);
     free(bgp_neighbor_peer_group_list);
 }
@@ -3790,6 +3792,7 @@ bgp_neighbor_af_insert_to_bgp_neighbor(const struct ovsrec_bgp_neighbor *bgpn,
     char **bgp_neighbor_af_name_list;
     int i = 0;
 
+    /* Allocate memory for new list with neighbor going to be added */
     bgp_neighbor_af_list =
         xmalloc(80/*take max len*/ * (bgpn->n_address_families + 1));
     bgp_neighbor_af_name_list =
