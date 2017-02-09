@@ -3168,6 +3168,12 @@ DEFUN(neighbor_peer_group,
       "Neighbor tag\n"
       "Configure peer-group\n")
 {
+    if (strlen(argv[0]) > 80){
+        vty_out(vty, "\n%%Peer group name should be less"
+                     " or equal to 80 characters\n");
+        return CMD_WARNING;
+    }
+
     return cli_neighbor_peer_group_cmd_execute(NULL, argv[0]);
 }
 
