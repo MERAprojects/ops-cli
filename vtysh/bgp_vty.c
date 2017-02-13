@@ -2670,7 +2670,8 @@ bgp_neighbor_peer_group_insert_to_bgp_router(const struct ovsrec_bgp_router *
     int i = 0;
 
     bgp_neighbor_peer_name_list =
-        xmalloc(80 * (bgp_router_context->n_bgp_neighbors + 1));
+        xmalloc(BGP_PEER_GROUP_MAX_LENGTH *
+               (bgp_router_context->n_bgp_neighbors + 1));
     bgp_neighbor_peer_group_list =
         xmalloc(sizeof *bgp_router_context->value_bgp_neighbors *
                               (bgp_router_context->n_bgp_neighbors + 1));
@@ -2935,7 +2936,8 @@ bgp_neighbor_remove_for_matching_peer_group_from_bgp_router(
     int i, j;
 
     bgp_neighbor_peer_name_list =
-        xmalloc(80 * (bgp_router_context->n_bgp_neighbors - 1));
+        xmalloc(BGP_PEER_GROUP_MAX_LENGTH *
+               (bgp_router_context->n_bgp_neighbors - 1));
     bgp_neighbor_peer_group_list =
         xmalloc(sizeof * bgp_router_context->value_bgp_neighbors *
                 (bgp_router_context->n_bgp_neighbors - 1));
@@ -2970,7 +2972,8 @@ bgp_neighbor_peer_group_remove_from_bgp_router(const struct ovsrec_bgp_router *
     int i = 0, j = 0;
 
     bgp_neighbor_peer_name_list =
-        xmalloc(80 * (bgp_router_context->n_bgp_neighbors - 1));
+        xmalloc(BGP_PEER_GROUP_MAX_LENGTH *
+               (bgp_router_context->n_bgp_neighbors - 1));
     bgp_neighbor_peer_group_list =
         xmalloc(sizeof * bgp_router_context->value_bgp_neighbors *
                 (bgp_router_context->n_bgp_neighbors - 1));
@@ -3168,7 +3171,7 @@ DEFUN(neighbor_peer_group,
       "Neighbor tag\n"
       "Configure peer-group\n")
 {
-    if (strlen(argv[0]) > 80){
+    if (strlen(argv[0]) > BGP_PEER_GROUP_MAX_LENGTH){
         vty_out(vty, "\n%%Peer group name should be less"
                      " or equal to 80 characters\n");
         return CMD_WARNING;
