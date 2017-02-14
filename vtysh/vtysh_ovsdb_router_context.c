@@ -37,8 +37,6 @@
 #include "openswitch-dflt.h"
 #include "command.h"
 #include "ospf_vty.h"
-#include "memory.h"
-
 
 
 /*-----------------------------------------------------------------------------
@@ -48,8 +46,6 @@
 |     vtysh_ovsdb_cbmsg_ptr p_msg: struct vtysh_ovsdb_cbmsg_struct *
 |     ovsrec_bgp_neighbor *nbr_table: pointer to a neighbor table struct
 |     neighbor: neighbor name or IP address
-|     ovsrec_bgp_neighbor **pgroup_ptr: pointer to peer-group table struct.
-|         If NULL then not in peer-group.
 | Return : void
 -----------------------------------------------------------------------------*/
 
