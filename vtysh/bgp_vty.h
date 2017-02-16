@@ -36,7 +36,7 @@
 #define BGP_MAX_TIMERS 2
 #define BGP_DEFAULT_HOLDTIME 180
 #define BGP_DEFAULT_KEEPALIVE 60
-#define BGP_PEER_GROUP_MAX_LENGTH 80
+#define BGP_PEER_GROUP_NAME_MAX_LENGTH 80
 
 /*
 ** depending on the outcome of the db transaction, returns
