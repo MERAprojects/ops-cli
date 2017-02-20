@@ -47,7 +47,7 @@
 #define BGP_ERR_PEER_GROUP_ALREADY_CREATED          "% Peer group already exists"
 #define BGP_ERR_NEIGHBOR_CREATION_FAILED            "% BGP neighbor/peer group object creation failed"
 #define BGP_ERR_NEIGHBOR_NOT_IN_PEER_GROUP          "% Neighbor is not in a peer group"
-#define BGP_ERR_UNABLE_TO_SET_TIMERS                "% Unable to set timers. Neighbor already has been assigned to the peer group"
+#define BGP_ERR_INVALID_FOR_PEER_GROUP_MEMBER       "% Invalid command for a peer-group member"
 #define BGP_ERR_UNSPECIFIED_REMOTE_AS               "% Specify peer remote AS or peer-group remote AS first"
 #define BGP_ERR_REMOVE_PRIVATE_AS                   "% Private AS cannot be removed for IBGP peers"
 #define BGP_ERR_NO_PREFIX_LIST                      "% Prefix List is not found"
