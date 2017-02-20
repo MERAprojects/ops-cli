@@ -3482,6 +3482,14 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
 	                               (int64_t *)&tim_val, ovs_bgp_peer_group->n_timers);
     }
 
+    /* Inherit minimum advertisement interval */
+    if (ovs_bgp_peer_group->advertisement_interval){
+        ovsrec_bgp_neighbor_set_advertisement_interval(ovs_bgp_neighbor,
+                ovs_bgp_peer_group->advertisement_interval, 1);
+    } else {
+        ovsrec_bgp_neighbor_set_advertisement_interval(ovs_bgp_neighbor, NULL, 0);
+    }
+
     /* Make this peer bound to the peer group. */
     ovsrec_bgp_neighbor_set_bgp_peer_group(ovs_bgp_neighbor,
                                            ovs_bgp_peer_group);
@@ -5282,6 +5290,27 @@ ALIAS(no_neighbor_timers_connect,
       "BGP connect timer\n"
       "Connect timer\n")
 
+static void
+neighbor_set_advertisement_interval(const struct ovsrec_bgp_neighbor *bgpn,
+        int64_t *advertisement_interval, size_t n_advertisement_interval)
+{
+    const struct ovsrec_bgp_neighbor *bgpn_cur, *bgpn_next;
+
+    ovsrec_bgp_neighbor_set_advertisement_interval(bgpn,
+                                                   advertisement_interval,
+                                                   n_advertisement_interval);
+
+    if (object_is_bgp_peer_group(bgpn)) {
+        bgpn_cur = bgpn;
+        OVSREC_BGP_NEIGHBOR_FOR_EACH_SAFE(bgpn_cur, bgpn_next, idl) {
+            if (object_is_neighbor(bgpn_cur) &&
+               (bgpn_cur->bgp_peer_group == bgpn)) {
+                ovsrec_bgp_neighbor_set_advertisement_interval(bgpn_cur,
+                        advertisement_interval, n_advertisement_interval);
+            }
+        }
+    }
+}
 
 static int
 cli_neighbor_advertisement_interval_cmd_execute(int argc, const char *argv[])
@@ -5310,19 +5339,29 @@ cli_neighbor_advertisement_interval_cmd_execute(int argc, const char *argv[])
 
     ovs_bgp_neighbor =
     get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context, ip_addr);
+
     if (ovs_bgp_neighbor) {
-        /* To write to ovsdb nbr table. */
-        ovsrec_bgp_neighbor_set_advertisement_interval(ovs_bgp_neighbor, &advertisement_interval, 1);
+        if (ovs_bgp_neighbor->bgp_peer_group) {
+            ERRONEOUS_DB_TXN(txn, "%% Invalid command for "
+                                  "a peer-group member");
+        } else {
+            /* To write to ovsdb nbr table. */
+            neighbor_set_advertisement_interval(ovs_bgp_neighbor,
+                                                &advertisement_interval, 1);
+        }
+    } else {
+        ERRONEOUS_DB_TXN(txn, "Neighbor not found");
     }
+
     END_DB_TXN(txn);
 }
 
 /*Neighbor advertisement interval*/
 DEFUN(neighbor_advertise_interval,
       neighbor_advertise_interval_cmd,
-      NEIGHBOR_CMD "advertisement-interval <0-600>",
+      NEIGHBOR_CMD2 "advertisement-interval <0-600>",
       NEIGHBOR_STR
-      NEIGHBOR_ADDR_STR
+      NEIGHBOR_ADDR_STR2
       "Minimum interval between sending BGP routing updates\n"
       "time in seconds\n")
 {
@@ -5334,10 +5373,10 @@ DEFUN(neighbor_advertise_interval,
 /*No neighbor advertisement interval*/
 DEFUN(no_neighbor_advertise_interval,
       no_neighbor_advertise_interval_cmd,
-      NO_NEIGHBOR_CMD "advertisement-interval",
+      NO_NEIGHBOR_CMD2 "advertisement-interval",
       NO_STR
       NEIGHBOR_STR
-      NEIGHBOR_ADDR_STR
+      NEIGHBOR_ADDR_STR2
       "Minimum interval between sending BGP routing updates\n")
 {
     const char *ip_addr = argv[0];
@@ -5363,8 +5402,17 @@ DEFUN(no_neighbor_advertise_interval,
 
     ovs_bgp_neighbor =
     get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context, ip_addr);
+
     if (ovs_bgp_neighbor) {
-        ovsrec_bgp_neighbor_set_advertisement_interval(ovs_bgp_neighbor, NULL, 0);
+        if (ovs_bgp_neighbor->bgp_peer_group) {
+            ERRONEOUS_DB_TXN(txn, "%% Invalid command for "
+                                  "a peer-group member");
+        } else {
+            /* To write to ovsdb nbr table. */
+            neighbor_set_advertisement_interval(ovs_bgp_neighbor, NULL, 0);
+        }
+    } else {
+        ERRONEOUS_DB_TXN(txn, "Neighbor not found");
     }
     END_DB_TXN(txn);
 }
