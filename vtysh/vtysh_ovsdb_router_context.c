@@ -87,11 +87,14 @@ static void vtysh_router_context_bgp_print_nbr_cfg(vtysh_ovsdb_cbmsg_ptr p_msg,
         }
     }
 
-    if (nbr_table->n_advertisement_interval)
-        vtysh_ovsdb_cli_print(p_msg,"%4s %s %s %s %d", "", "neighbor",
-                              neighbor,
-                              "advertisement-interval", *(nbr_table->
-                              advertisement_interval));
+    if (nbr_table->n_advertisement_interval) {
+        if (!pgroup_ptr) {
+            vtysh_ovsdb_cli_print(p_msg,"%4s %s %s %s %d", "", "neighbor",
+                                  neighbor,
+                                  "advertisement-interval", *(nbr_table->
+                                  advertisement_interval));
+        }
+    }
 
     if (nbr_table->n_timers > 0) {
         /* Invalid command for peer-group member so values are inherited from peer-group */
