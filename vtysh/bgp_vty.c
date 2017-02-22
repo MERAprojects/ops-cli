@@ -2696,11 +2696,11 @@ bgp_neighbor_peer_group_insert_to_bgp_router(const struct ovsrec_bgp_router *
 
 static bool
 is_ibgp_peer(const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor,
-             int64_t asn)
+             int64_t asn_own)
 {
   if ((ovs_bgp_neighbor->n_remote_as > 0) && ovs_bgp_neighbor->remote_as)
   {
-    if (*ovs_bgp_neighbor->remote_as == asn)
+    if (*ovs_bgp_neighbor->remote_as == asn_own)
     {
       return true;
     }
