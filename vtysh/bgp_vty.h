@@ -37,6 +37,28 @@
 #define BGP_DEFAULT_HOLDTIME 180
 #define BGP_DEFAULT_KEEPALIVE 60
 
+/* BGP error codes.  */
+#define BGP_ERR_NO_VRF_FOUND                        "% VRF is not found"
+#define BGP_ERR_ROUTER_IS_NOT_CONFIGURED            "% BGP router is not configured"
+#define BGP_ERR_NEIGHBOR_IS_NOT_CONFIGURED          "% Neighbor is not configured"
+#define BGP_ERR_COMMAND_EXIST                       "% Command exists"
+#define BGP_ERR_COMMAND_NOT_EXIST                   "% Command does not exist"
+#define BGP_ERR_PEER_GROUP_IS_NOT_CREATED           "% Peer group does not exist. Create the peer-group first"
+#define BGP_ERR_PEER_GROUP_ALREADY_CREATED          "% Peer group already exists"
+#define BGP_ERR_NEIGHBOR_CREATION_FAILED            "% BGP neighbor/peer group object creation failed"
+#define BGP_ERR_NEIGHBOR_NOT_IN_PEER_GROUP          "% Neighbor is not in a peer group"
+#define BGP_ERR_UNABLE_TO_SET_TIMERS                "% Unable to set timers. Neighbor already has been assigned to the peer group"
+#define BGP_ERR_UNSPECIFIED_REMOTE_AS               "% Specify peer remote AS or peer-group remote AS first"
+#define BGP_ERR_REMOVE_PRIVATE_AS                   "% Private AS cannot be removed for IBGP peers"
+#define BGP_ERR_NO_PREFIX_LIST                      "% Prefix List is not found"
+#define BGP_ERR_NO_PREFIX_LIST_WITH_DESCR           "% Prefix List with the given description is not found"
+#define BGP_ERR_NO_PREFIX_LIST_ENTRY                "% Prefix List entry is not found"
+#define BGP_ERR_NO_AS_PATH_FILTER                   "% AS-Path filter is not found"
+#define BGP_ERR_NO_ROUTE_MAP                        "% Route-map is not found"
+#define BGP_ERR_NO_ROUTE_MAP_ENTRY                  "% Route-map entry is not found"
+#define BGP_ERR_NO_COMMUNITY_FILTER_LIST            "% Community-filter list is not found"
+#define BGP_ERR_EBGP_MULTIHOP_TTL_SECURITY_CONFIG   "% Can't configure ebgp-multihop and ttl-security at the same time"
+
 /*
 ** depending on the outcome of the db transaction, returns
 ** the appropriate value for the cli command execution.
