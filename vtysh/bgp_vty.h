@@ -34,6 +34,9 @@
 #define NETWORK_MAX_LEN 49
 #define TIMER_KEY_MAX_LENGTH 80
 #define BGP_MAX_TIMERS 2
+#define BGP_MAX_FILTER_LISTS 2
+#define BGP_MAX_PREFIX_LISTS 2
+#define BGP_MAX_ROUTE_MAPS 2
 #define BGP_DEFAULT_HOLDTIME 180
 #define BGP_DEFAULT_KEEPALIVE 60
 #define BGP_PEER_GROUP_NAME_MAX_LENGTH 80
@@ -59,7 +62,7 @@
 #define BGP_ERR_NO_ROUTE_MAP_ENTRY                  "% Route-map entry is not found"
 #define BGP_ERR_NO_COMMUNITY_FILTER_LIST            "% Community-filter list is not found"
 #define BGP_ERR_EBGP_MULTIHOP_TTL_SECURITY_CONFIG   "% Can't configure ebgp-multihop and ttl-security at the same time"
-
+#define BGP_ERR_INVALID_FOR_PEER_GROUP_MEMBER       "% Invalid command for a peer-group member"
 /*
 ** depending on the outcome of the db transaction, returns
 ** the appropriate value for the cli command execution.
