@@ -88,7 +88,7 @@ DEFUN (cli_sub_intf_shutdown,
 
     OVSREC_INTERFACE_FOR_EACH(row, idl)
     {
-        if (strcmp(row->name, (char*)vty->index) == 0)
+        if (strcmp(row->name, (char*)((uintptr_t)vty->index)) == 0)
         {
             smap_clone(&smap_user_config, &row->user_config);
 
@@ -111,7 +111,7 @@ DEFUN (cli_sub_intf_shutdown,
 
     OVSREC_PORT_FOR_EACH(port_row, idl)
     {
-        if (strcmp(port_row->name, (char*)vty->index) == 0)
+        if (strcmp(port_row->name, (char*)((uintptr_t)vty->index)) == 0)
         {
             if (vty_flags & CMD_FLAG_NO_CMD)
             {
@@ -181,7 +181,7 @@ DEFUN  (cli_encapsulation_dot1Q_vlan,
 
     OVSREC_INTERFACE_FOR_EACH(tmp_row, idl)
     {
-        if (strcmp(tmp_row->name, (char*)vty->index) == 0)
+        if (strcmp(tmp_row->name, (char*)((uintptr_t)vty->index)) == 0)
         {
             row = tmp_row;
         }
@@ -194,7 +194,7 @@ DEFUN  (cli_encapsulation_dot1Q_vlan,
 
     OVSREC_INTERFACE_FOR_EACH(tmp_row, idl)
     {
-        if (strcmp(tmp_row->name, (char*)vty->index) != 0)
+        if (strcmp(tmp_row->name, (char*)((uintptr_t)vty->index)) != 0)
         {
             if ((tmp_row->n_subintf_parent > 0)
                     && (tmp_row->value_subintf_parent[0] == parent_intf_row)
@@ -354,7 +354,7 @@ DEFUN (cli_sub_intf_vrf_add_port,
     "Attach Sub Interface to VRF\n"
     "VRF name\n")
 {
-  return vrf_add_port((char*) vty->index, argv[0]);
+  return vrf_add_port((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_sub_intf_vrf_del_port,
@@ -365,7 +365,7 @@ DEFUN (cli_sub_intf_vrf_del_port,
     "Detach Sub Interface from VRF\n"
     "VRF name\n")
 {
-  return vrf_del_port((char*) vty->index, argv[0]);
+  return vrf_del_port((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_sub_intf_config_ip4,
@@ -375,7 +375,7 @@ DEFUN (cli_sub_intf_config_ip4,
         "Set IP address\n"
         "Sub Interface IP address\n")
 {
-    return sub_intf_config_ip((char*) vty->index, argv[0]);
+    return sub_intf_config_ip((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_sub_intf_del_ip4,
@@ -390,7 +390,7 @@ DEFUN (cli_sub_intf_del_ip4,
     struct ovsdb_idl_txn *status_txn = NULL;
     enum ovsdb_idl_txn_status status;
     bool port_found = false;
-    const char *if_name = (char*)vty->index;
+    const char *if_name = (char*)((uintptr_t)vty->index);
     char ip4[IP_ADDRESS_LENGTH];
 
     if (NULL != argv[0])
@@ -465,7 +465,7 @@ DEFUN (cli_sub_intf_config_ipv6,
     enum ovsdb_idl_txn_status status;
     bool secondary = false;
 
-    const char *if_name = (char*) vty->index;
+    const char *if_name = (char*)((uintptr_t)vty->index);
     const char *ipv6 = argv[0];
 
     if (!is_valid_ip_address(argv[0]))
@@ -526,7 +526,7 @@ DEFUN (cli_sub_intf_del_ipv6,
     struct ovsdb_idl_txn *status_txn = NULL;
     enum ovsdb_idl_txn_status status;
 
-    const char *if_name = (char*) vty->index;
+    const char *if_name = (char*)((uintptr_t)vty->index);
     const char *ipv6 = NULL;
 
     if (NULL != argv[0])
@@ -637,7 +637,7 @@ cli_show_subinterface_row(const struct ovsrec_interface *ifrow, bool brief)
         }
         else
         {
-            vty_out(vty, " %-6ld", intVal/1000000);
+            vty_out(vty, " %-6"PRId64, intVal/1000000);
         }
         vty_out(vty, "   -- ");  /* Port channel */
         vty_out (vty, "%s", VTY_NEWLINE);
@@ -655,7 +655,7 @@ cli_show_subinterface_row(const struct ovsrec_interface *ifrow, bool brief)
 
         if (0 != key_subintf_parent)
         {
-            vty_out (vty, " Encapsulation dot1Q %lu %s",
+            vty_out (vty, " Encapsulation dot1Q %"PRIu64" %s",
                     key_subintf_parent, VTY_NEWLINE);
         }
         else
@@ -740,7 +740,7 @@ show_subinterface_status(const struct ovsrec_interface *ifrow, bool brief,
     {
         /* Display brief information. */
         vty_out (vty, " %-12s ", ifrow->name);
-        vty_out(vty, "%4lu    ", key_subintf_parent); /*VLAN */
+        vty_out(vty, "%4"PRIu64"    ", key_subintf_parent); /*VLAN */
         vty_out(vty, "eth  "); /*type */
         vty_out(vty, "routed "); /* mode - routed or not */
 
@@ -1080,7 +1080,7 @@ create_sub_interface(const char* subifname)
     {
         if (strcmp(port_row->name, ifnumber) == 0)
         {
-            vty->index = ifnumber;
+            vty->index = (uintptr_t)ifnumber;
             vty->node = SUB_INTERFACE_NODE;
             return CMD_SUCCESS;
         }
@@ -1225,7 +1225,7 @@ create_sub_interface(const char* subifname)
 
         if (status_txn == TXN_SUCCESS || status_txn == TXN_UNCHANGED)
         {
-            vty->index = ifnumber;
+            vty->index = (uintptr_t)ifnumber;
             vty->node = SUB_INTERFACE_NODE;
             return CMD_SUCCESS;
         }
@@ -1237,7 +1237,7 @@ create_sub_interface(const char* subifname)
     }
     else
     {
-        vty->index = ifnumber;
+        vty->index = (uintptr_t)ifnumber;
         vty->node = SUB_INTERFACE_NODE;
     }
 

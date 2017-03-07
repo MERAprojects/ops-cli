@@ -1732,7 +1732,7 @@ DEFUN (cli_vrf_add_port,
     "Attach interface to VRF\n"
     "VRF name\n")
 {
-  return vrf_add_port((char*) vty->index, argv[0]);
+  return vrf_add_port((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_vrf_del_port,
@@ -1743,7 +1743,7 @@ DEFUN (cli_vrf_del_port,
     "Detach interface from VRF\n"
     "VRF name\n")
 {
-  return vrf_del_port((char*) vty->index, argv[0]);
+  return vrf_del_port((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_vrf_routing,
@@ -1751,7 +1751,7 @@ DEFUN (cli_vrf_routing,
     "routing",
     "Configure interface as L3\n")
 {
-  return vrf_routing((char*) vty->index);
+  return vrf_routing((char*)((uintptr_t)vty->index));
 }
 
 DEFUN (cli_vrf_no_routing,
@@ -1760,7 +1760,7 @@ DEFUN (cli_vrf_no_routing,
     NO_STR
     "Configure interface as L3\n")
 {
-    return vrf_no_routing((char*) vty->index);
+    return vrf_no_routing((char*)((uintptr_t)vty->index));
 }
 
 DEFUN (cli_vrf_config_ip,
@@ -1771,7 +1771,7 @@ DEFUN (cli_vrf_config_ip,
     "Interface IP address\n"
     "Set as secondary IP address\n")
 {
-  return vrf_config_ip((char*) vty->index, argv[0],
+  return vrf_config_ip((char*)((uintptr_t)vty->index), argv[0],
       (argv[1] != NULL) ? true : false);
 }
 
@@ -1784,7 +1784,7 @@ DEFUN (cli_vrf_del_ip,
     "Interface IP address\n"
     "Set as secondary IP address\n")
 {
-  return vrf_del_ip((char*) vty->index, argv[0],
+  return vrf_del_ip((char*)((uintptr_t)vty->index), argv[0],
       (argv[1] != NULL) ? true : false);
 }
 
@@ -1796,7 +1796,7 @@ DEFUN (cli_vrf_config_ipv6,
     "Interface IPv6 address\n"
     "Set as secondary IPv6 address\n")
 {
-  return vrf_config_ipv6((char*) vty->index, argv[0],
+  return vrf_config_ipv6((char*)((uintptr_t)vty->index), argv[0],
       (argv[1] != NULL) ? true : false);
 }
 
@@ -1809,7 +1809,7 @@ DEFUN (cli_vrf_del_ipv6,
     "Interface IPv6 address\n"
     "Set as secondary IPv6  address\n")
 {
-  return vrf_del_ipv6((char*) vty->index, argv[0],
+  return vrf_del_ipv6((char*)((uintptr_t)vty->index), argv[0],
       (argv[1] != NULL) ? true : false);
 }
 
@@ -1839,7 +1839,7 @@ DEFUN (cli_vrf_show,
          IP_STR
          "Enable proxy ARP\n")
   {
-       return vrf_proxy_arp_toggle_state((char *) vty->index,
+       return vrf_proxy_arp_toggle_state((char*)((uintptr_t)vty->index),
                PORT_OTHER_CONFIG_MAP_PROXY_ARP_ENABLED_TRUE);
   }
 
@@ -1850,7 +1850,7 @@ DEFUN (cli_vrf_show,
          IP_STR
          "Disable proxy ARP\n")
   {
-      return vrf_proxy_arp_toggle_state((char *) vty->index, NULL);
+      return vrf_proxy_arp_toggle_state((char*)((uintptr_t)vty->index), NULL);
   }
 #endif /* FTR_PROXY_ARP */
 
@@ -1861,7 +1861,7 @@ DEFUN (cli_vrf_show,
          IP_STR
          "Enable local proxy ARP\n")
   {
-      return vrf_local_proxy_arp_toggle_state((char *) vty->index,
+      return vrf_local_proxy_arp_toggle_state((char*)((uintptr_t)vty->index),
               PORT_OTHER_CONFIG_MAP_LOCAL_PROXY_ARP_ENABLED_TRUE);
   }
 
@@ -1872,7 +1872,7 @@ DEFUN (cli_vrf_show,
          IP_STR
          "Disable local proxy ARP\n")
   {
-      return vrf_local_proxy_arp_toggle_state((char *) vty->index, NULL);
+      return vrf_local_proxy_arp_toggle_state((char*)((uintptr_t)vty->index), NULL);
   }
 #endif /* FTR_LOCAL_PROXY_ARP */
 

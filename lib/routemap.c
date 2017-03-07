@@ -959,7 +959,7 @@ DEFUN (route_map,
   map = route_map_get (argv[0]);
   index = route_map_index_get (map, permit, pref);
 
-  vty->index = index;
+  vty->index = (uintptr_t)index;
   vty->node = RMAP_NODE;
   return CMD_SUCCESS;
 }
@@ -1063,7 +1063,7 @@ DEFUN (rmap_onmatch_next,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
 
   if (index)
     index->exitpolicy = RMAP_NEXT;
@@ -1080,7 +1080,7 @@ DEFUN (no_rmap_onmatch_next,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
 
   if (index)
     index->exitpolicy = RMAP_EXIT;
@@ -1095,7 +1095,7 @@ DEFUN (rmap_onmatch_goto,
        "Goto Clause number\n"
        "Number\n")
 {
-  struct route_map_index *index = vty->index;
+  struct route_map_index *index = (struct route_map_index *)((uintptr_t)vty->index);
   int d = 0;
 
   if (index)
@@ -1130,7 +1130,7 @@ DEFUN (no_rmap_onmatch_goto,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
 
   if (index)
     index->exitpolicy = RMAP_EXIT;
@@ -1191,7 +1191,7 @@ DEFUN (rmap_call,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
   if (index)
     {
       if (index->nextrm)
@@ -1209,7 +1209,7 @@ DEFUN (no_rmap_call,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
 
   if (index->nextrm)
     {
@@ -1228,7 +1228,7 @@ DEFUN (rmap_description,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
   if (index)
     {
       if (index->description)
@@ -1246,7 +1246,7 @@ DEFUN (no_rmap_description,
 {
   struct route_map_index *index;
 
-  index = vty->index;
+  index = (struct route_map_index *)((uintptr_t)vty->index);
   if (index)
     {
       if (index->description)

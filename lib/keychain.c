@@ -237,7 +237,7 @@ DEFUN (key_chain,
   struct keychain *keychain;
 
   keychain = keychain_get (argv[0]);
-  vty->index = keychain;
+  vty->index = (uintptr_t)keychain;
   vty->node = KEYCHAIN_NODE;
 
   return CMD_SUCCESS;
@@ -276,7 +276,7 @@ DEFUN (key,
   struct key *key;
   u_int32_t index;
 
-  keychain = vty->index;
+  keychain = (struct keychain *)((uintptr_t)vty->index);
 
   VTY_GET_INTEGER ("key identifier", index, argv[0]);
   key = key_get (keychain, index);
@@ -297,7 +297,7 @@ DEFUN (no_key,
   struct key *key;
   u_int32_t index;
   
-  keychain = vty->index;
+  keychain = (struct keychain *)((uintptr_t)vty->index);
 
   VTY_GET_INTEGER ("key identifier", index, argv[0]);
   key = key_lookup (keychain, index);

@@ -1306,7 +1306,7 @@ cli_router_bgp_cmd_execute(char *vrf_name, int64_t asn)
         ERRONEOUS_DB_TXN(bgp_router_txn, BGP_ERR_NO_VRF_FOUND);
     }
     if (vrf_row->n_bgp_routers && (vrf_row->key_bgp_routers[0] != asn)) {
-        vty_out(vty,"BGP is already running; AS is %ld%s",
+        vty_out(vty,"BGP is already running; AS is %"PRId64"%s",
                 vrf_row->key_bgp_routers[0],VTY_NEWLINE);
         END_DB_TXN(bgp_router_txn);
         return CMD_SUCCESS;
@@ -1326,7 +1326,7 @@ cli_router_bgp_cmd_execute(char *vrf_name, int64_t asn)
     }
     /* Get the context from previous command for sub-commands. */
     vty->node = BGP_NODE;
-    vty->index = (void*) asn;
+    vty->index = (uintptr_t) asn;
 
     /* End of transaction. */
     END_DB_TXN(bgp_router_txn);
@@ -1439,7 +1439,7 @@ cli_bgp_router_id_cmd_execute(char *vrf_name, char *router_ip_addr)
         /* Start of transaction. */
         START_DB_TXN(bgp_router_txn);
 
-        VLOG_DBG("vty_index for router_id: %ld\n",(int64_t)vty->index);
+        VLOG_DBG("vty_index for router_id: %"PRId64"\n",vty->index);
 
         vrf_row = get_ovsrec_vrf_with_name(vrf_name);
         if (vrf_row == NULL) {
@@ -1447,7 +1447,7 @@ cli_bgp_router_id_cmd_execute(char *vrf_name, char *router_ip_addr)
         }
         /* See if it already exists. */
         bgp_router_row =
-        get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+        get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
 
         /* If does not exist, nothing to modify. */
         if (bgp_router_row == NULL) {
@@ -1486,7 +1486,7 @@ cli_no_bgp_router_id_cmd_execute(char *vrf_name)
         /* Start of transaction. */
         START_DB_TXN(bgp_router_txn);
 
-        VLOG_DBG("vty_index for router_id: %ld\n",(int64_t)vty->index);
+        VLOG_DBG("vty_index for router_id: %"PRId64"\n",vty->index);
 
         vrf_row = get_ovsrec_vrf_with_name(vrf_name);
         if (vrf_row == NULL) {
@@ -1494,7 +1494,7 @@ cli_no_bgp_router_id_cmd_execute(char *vrf_name)
         }
         /* See if it already exists. */
         bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
         /* If does not exist, nothing to modify. */
         if (bgp_router_row == NULL) {
@@ -1527,7 +1527,7 @@ cli_no_bgp_router_id_val_cmd_execute(char *vrf_name, char *router_ip_addr)
         /* Start of transaction. */
         START_DB_TXN(bgp_router_txn);
 
-        VLOG_DBG("vty_index for router_id: %ld\n",(int64_t)vty->index);
+        VLOG_DBG("vty_index for router_id: %"PRId64"\n",vty->index);
 
         vrf_row = get_ovsrec_vrf_with_name(vrf_name);
         if (vrf_row == NULL) {
@@ -1535,7 +1535,7 @@ cli_no_bgp_router_id_val_cmd_execute(char *vrf_name, char *router_ip_addr)
         }
         /* See if it already exists. */
         bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
         /* If does not exist, nothing to modify. */
         if (bgp_router_row == NULL) {
@@ -1690,7 +1690,7 @@ cli_bgp_maxpaths_cmd_execute(char *vrf_name, int64_t max_paths)
     /* Start of transaction. */
     START_DB_TXN(bgp_router_txn);
 
-    VLOG_DBG("vty_index for maxpaths : %ld\n", (int64_t)vty->index);
+    VLOG_DBG("vty_index for maxpaths : %"PRId64"\n", vty->index);
 
     vrf_row = get_ovsrec_vrf_with_name(vrf_name);
     if (vrf_row == NULL) {
@@ -1699,7 +1699,7 @@ cli_bgp_maxpaths_cmd_execute(char *vrf_name, int64_t max_paths)
 
     /* See if it already exists. */
     bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                    (int64_t)vty->index);
+                                                    vty->index);
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
         ERRONEOUS_DB_TXN(bgp_router_txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -1790,7 +1790,7 @@ cli_bgp_timers_cmd_execute(char *vrf_name, int64_t keepalive, int64_t holdtime)
     /* Start of transaction. */
     START_DB_TXN(bgp_router_txn);
 
-    VLOG_DBG("vty_index for timers : %ld\n",(int64_t)vty->index);
+    VLOG_DBG("vty_index for timers : %"PRId64"\n",vty->index);
 
     vrf_row = get_ovsrec_vrf_with_name(vrf_name);
     if (vrf_row == NULL) {
@@ -1799,7 +1799,7 @@ cli_bgp_timers_cmd_execute(char *vrf_name, int64_t keepalive, int64_t holdtime)
 
     /* See if it already exists. */
     bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                    (int64_t)vty->index);
+                                                    vty->index);
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
         ERRONEOUS_DB_TXN(bgp_router_txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -1846,7 +1846,7 @@ cli_no_bgp_timers_cmd_execute(char *vrf_name)
     /* Start of transaction. */
     START_DB_TXN(bgp_router_txn);
 
-    VLOG_DBG("vty_index for timers : %ld\n",(int64_t)(vty->index));
+    VLOG_DBG("vty_index for timers : %"PRId64"\n",vty->index);
 
     vrf_row = get_ovsrec_vrf_with_name(vrf_name);
     if (vrf_row == NULL) {
@@ -1855,7 +1855,7 @@ cli_no_bgp_timers_cmd_execute(char *vrf_name)
 
     /* See if it already exists. */
     bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                    (int64_t)(vty->index));
+                                                    vty->index);
 
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
@@ -2042,7 +2042,7 @@ cli_bgp_fast_external_failover_cmd_execute(char *vrf_name)
     }
     /* See if it already exists. */
     bgp_router_row =
-    get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
 
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
@@ -2086,7 +2086,7 @@ cli_no_bgp_fast_external_failover_cmd_execute(char *vrf_name)
     }
     /* See if it already exists. */
     bgp_router_row =
-    get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
 
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
@@ -2259,7 +2259,7 @@ cli_bgp_log_neighbor_changes_cmd_execute (char *vrf_name)
     }
     /* See if it already exists. */
     bgp_router_row =
-    get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
 
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
@@ -2300,7 +2300,7 @@ cli_no_bgp_log_neighbor_changes_cmd_execute (char *vrf_name)
     }
     /* See if it already exists. */
     bgp_router_row =
-    get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
 
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
@@ -2463,11 +2463,11 @@ cli_bgp_network_cmd_execute(char *vrf_name, char *network)
 
     /* See if it already exists. */
     bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                    (int64_t)vty->index);
+                                                    vty->index);
     if (bgp_router_row == NULL) {
         ERRONEOUS_DB_TXN(bgp_router_txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     } else {
-        VLOG_DBG("vty_index for network : %ld\n",(int64_t)vty->index);
+        VLOG_DBG("vty_index for network : %"PRId64"\n",vty->index);
         /* Insert networks in BGP_Router table. */
         network_list = xmalloc((NETWORK_MAX_LEN*sizeof(char)) *
                                (bgp_router_row->n_networks + 1));
@@ -2548,12 +2548,12 @@ cli_no_bgp_network_cmd_execute(char *vrf_name, const char *network)
 
     /* See if it already exists. */
     bgp_router_row = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                    (int64_t)vty->index);
+                                                    vty->index);
     if (bgp_router_row == NULL) {
         ERRONEOUS_DB_TXN(bgp_router_txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     } else if(verify_network_in_bgp_router_table(bgp_router_row, prefix_str)) {
-        VLOG_DBG("vty_index for no network : %ld\n network : %s",
-                  (int64_t)vty->index, network);
+        VLOG_DBG("vty_index for no network : %"PRId64"\n network : %s",
+                  vty->index, network);
         /* Delete networks in BGP_Router table. */
         network_list = xmalloc((NETWORK_MAX_LEN*sizeof(char)) *
                                (bgp_router_row->n_networks - 1));
@@ -2729,7 +2729,7 @@ cli_neighbor_remote_as_cmd_execute(char *vrf_name, struct vty *vty,
     bool update_all_peers = false;
     char *name;
     int i = 0;
-    int64_t asn = (int64_t)vty->index;
+    int64_t asn = vty->index;
 
     START_DB_TXN(txn);
 
@@ -2859,7 +2859,7 @@ cli_neighbor_fallover_bfd_cmd_execute(char *vrf_name, struct vty *vty,
     if (vrf_row == NULL) {
        ERRONEOUS_DB_TXN(txn, BGP_ERR_NO_VRF_FOUND);
     }
-    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
     if (!bgp_router_context) {
        ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -2900,7 +2900,7 @@ cli_neighbor_no_fallover_bfd_cmd_execute(char *vrf_name, struct vty *vty,
         ERRONEOUS_DB_TXN(txn, BGP_ERR_NO_VRF_FOUND);
     }
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3074,7 +3074,7 @@ cli_no_neighbor_cmd_execute(char *vrf_name, const char *peer_str)
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3139,7 +3139,7 @@ cli_no_neighbor_peer_group_cmd_execute(char *vrf_name, const char *name)
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if(!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3170,7 +3170,7 @@ cli_neighbor_peer_group_cmd_execute(char *vrf_name, const char *groupName)
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3334,7 +3334,7 @@ cli_neighbor_password_execute(char *vrf_name, int argc, const char *argv[])
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                       (int64_t)vty->index);
+                                                       vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -3392,7 +3392,7 @@ DEFUN(no_neighbor_password,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -3461,7 +3461,7 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
 
     /* This *MUST* be already available. */
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3565,7 +3565,7 @@ cli_no_neighbor_set_peer_group_cmd_execute(char *vrf_name,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3661,7 +3661,7 @@ DEFUN(neighbor_shutdown,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3702,7 +3702,7 @@ DEFUN(no_neighbor_shutdown,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3885,7 +3885,7 @@ cli_neighbor_next_hop_self_cmd_execute(struct vty *vty,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (bgp_router_context) {
         ovs_bgp_neighbor =
         get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context,ip_addr);
@@ -3963,7 +3963,7 @@ cli_neighbor_remove_private_as_cmd_execute(struct vty *vty,
     struct ovsdb_idl_txn *txn;
     const bool remove_private_as = true;
     char *vrf_name = NULL;
-    int64_t asn = (int64_t)vty->index;
+    int64_t asn = vty->index;
 
     START_DB_TXN(txn);
 
@@ -4033,7 +4033,7 @@ cli_no_neighbor_remove_private_as_cmd_execute(struct vty *vty,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -4136,7 +4136,7 @@ cli_neighbor_soft_reconfiguration_inbound_cmd_execute(char *vrf_name,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (bgp_router_context) {
         ovs_bgp_neighbor =
         get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context,ip_addr);
@@ -4189,7 +4189,7 @@ cli_no_neighbor_soft_reconfiguration_inbound_cmd_execute(char *vrf_name,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (bgp_router_context) {
         ovs_bgp_neighbor =
         get_bgp_neighbor_with_bgp_router_and_ipaddr(bgp_router_context,ip_addr);
@@ -4761,7 +4761,7 @@ cli_neighbor_description_execute(int argc, const char *argv[])
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -4823,7 +4823,7 @@ DEFUN(no_neighbor_description,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -5062,7 +5062,7 @@ cli_bgp_neighbor_weight_execute (char *vrf_name,
     }
 
     bgp_router_row = get_ovsrec_bgp_router_with_asn (vrf_row,
-                        (int64_t)vty->index);
+                        vty->index);
     if (!bgp_router_row) {
         ERRONEOUS_DB_TXN (txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -5220,7 +5220,7 @@ cli_neighbor_timers_execute(char *vrf_name, int argc, const char *argv[])
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -5285,7 +5285,7 @@ DEFUN(no_neighbor_timers,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -5365,7 +5365,7 @@ cli_neighbor_advertisement_interval_cmd_execute(int argc, const char *argv[])
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -5422,7 +5422,7 @@ DEFUN(no_neighbor_advertise_interval,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -5548,7 +5548,7 @@ cli_neighbor_prefix_list_cmd_execute(char *vrf_name, char *ip_addr, char *name, 
         ERRONEOUS_DB_TXN(txn, BGP_ERR_NO_VRF_FOUND);
     }
 
-    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -5641,7 +5641,7 @@ cli_no_neighbor_prefix_list_cmd_execute(char *vrf_name, char *ip_addr,
         ERRONEOUS_DB_TXN(txn, BGP_ERR_NO_VRF_FOUND);
     }
 
-    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -5750,7 +5750,7 @@ get_bgp_neighbor(const struct ovsdb_idl_txn *txn_a, char *vrf_name, char *ip_add
         return NULL;
     }
 
-    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, (int64_t)vty->index);
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, vty->index);
     if (!bgp_router_context) {
         cli_do_config_abort(txn);
         vty_out(vty, "%s%s", BGP_ERR_ROUTER_IS_NOT_CONFIGURED, VTY_NEWLINE);
@@ -6184,7 +6184,7 @@ cli_neighbor_route_map_cmd_execute(char *vrf_name, char *ipAddr, char *name,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -6275,7 +6275,7 @@ cli_no_neighbor_route_map_cmd_execute(char *vrf_name, char *ipAddr,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -6551,7 +6551,7 @@ cli_allow_as_in_execute(char *vrf_name, int argc, const char *argv[])
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -6618,7 +6618,7 @@ DEFUN(no_neighbor_allowas_in,
     }
 
     bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+                                                        vty->index);
 
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -7856,9 +7856,9 @@ DEFUN(clear_bgp_as_soft_out,
     }
 
     if (row->bgp_peer_group) {
-        vty_out(vty, "%% Neighbor with asn %lu is part of peer-group. Operation"
+        vty_out(vty, "%% Neighbor with asn %"PRIu64" is part of peer-group. Operation"
                 " not permitted%s", asn, VTY_NEWLINE);
-        VLOG_DBG("Skipping clear as soft out request for neighbor with asn %lu"
+        VLOG_DBG("Skipping clear as soft out request for neighbor with asn %"PRIu64
                  "since it's part of peer group\n",
                  asn);
         cli_do_config_abort(status_txn);
@@ -9098,9 +9098,9 @@ DEFUN(clear_bgp_as_soft_in,
     }
 
     if (row->bgp_peer_group) {
-        vty_out(vty, "%% Neighbor with asn %lu is part of peer-group. Operation"
+        vty_out(vty, "%% Neighbor with asn %"PRIu64" is part of peer-group. Operation"
                 " not permitted%s", asn, VTY_NEWLINE);
-        VLOG_DBG("Skipping clear as soft in request for neighbor with asn %lu"
+        VLOG_DBG("Skipping clear as soft in request for neighbor with asn %"PRIu64
                  "since it's part of peer group\n",
                  asn);
         cli_do_config_abort(status_txn);
@@ -9844,7 +9844,7 @@ cli_bgp_show_summary_vty_execute(struct vty *vty, int afi, int safi)
     bgp_router_context = ovs_vrf->value_bgp_routers[0];
 
     if (bgp_router_context)
-        vty_out(vty, "BGP router identifier %s, local AS number %ld\n",
+        vty_out(vty, "BGP router identifier %s, local AS number %"PRId64"\n",
                 get_bgp_router_id(bgp_router_context),
                 ovs_vrf->key_bgp_routers[0]);
 
@@ -9866,7 +9866,7 @@ cli_bgp_show_summary_vty_execute(struct vty *vty, int afi, int safi)
         for (i=0; i < (16-len); i++)
             vty_out(vty, " ");
 
-        vty_out(vty, "%7ld", *ovs_bgp_neighbor->remote_as);
+        vty_out(vty, "%7"PRId64"", *ovs_bgp_neighbor->remote_as);
 
         vty_out(vty, "%8d", calc_msg_recvd_count(ovs_bgp_neighbor));
 
@@ -9908,7 +9908,7 @@ cli_show_bgp_summary_vty_execute(struct vty *vty, int afi, int safi)
       }
     bgp_router_context = ovs_vrf->value_bgp_routers[0];
 
-    vty_out(vty, "BGP router identifier %s, local AS number %ld%s",
+    vty_out(vty, "BGP router identifier %s, local AS number %"PRId64"%s",
             get_bgp_router_id(bgp_router_context),
             ovs_vrf->key_bgp_routers[0], VTY_NEWLINE);
 
@@ -9943,7 +9943,7 @@ cli_show_bgp_summary_vty_execute(struct vty *vty, int afi, int safi)
         else
             vty_out (vty, "%*s", len, " ");
 
-        vty_out(vty, "%7ld", *ovs_bgp_neighbor->remote_as);
+        vty_out(vty, "%7"PRId64"", *ovs_bgp_neighbor->remote_as);
 
         vty_out(vty, " %7d", calc_msg_recvd_count(ovs_bgp_neighbor));
 
@@ -10244,11 +10244,11 @@ show_one_bgp_neighbor(struct vty *vty, char *name,
         value_timers[1] = BGP_DEFAULT_KEEPALIVE;
     }
 
-    vty_out(vty, "    Configured timers: Keepalive %ld, Holdtime %ld\n",
+    vty_out(vty, "    Configured timers: Keepalive %"PRId64", Holdtime %"PRId64"\n",
         value_timers[1], value_timers[0]);
 
     if (ovs_bgp_neighbor->n_negotiated_timers == 2) {
-        vty_out(vty, "    Negotiated timers: Keepalive %ld, Holdtime %ld\n\n",
+        vty_out(vty, "    Negotiated timers: Keepalive %"PRId64", Holdtime %"PRId64"\n\n",
                 ovs_bgp_neighbor->value_negotiated_timers[1],
                 ovs_bgp_neighbor->value_negotiated_timers[0]);
     }
@@ -10256,7 +10256,7 @@ show_one_bgp_neighbor(struct vty *vty, char *name,
     if (ovs_bgp_neighbor->n_statistics) {
         vty_out(vty, "    statistics:\n");
         for (i = 0; i < ovs_bgp_neighbor->n_statistics; i++) {
-            vty_out(vty, "       %s: %ld\n",
+            vty_out(vty, "       %s: %"PRId64"\n",
                     ovs_bgp_neighbor->key_statistics[i],
                     ovs_bgp_neighbor->value_statistics[i]);
        }
@@ -10659,7 +10659,7 @@ cli_bgp_redistribute_cmd_execute(const char *vrf_name, const char *type,
     }
     /* See if it already exists. */
     bgp_router_row = get_ovsrec_bgp_router_with_asn((struct ovsrec_vrf *)vrf_row,
-                                                    (int64_t)vty->index);
+                                                    vty->index);
     /* If does not exist, nothing to modify. */
     if (bgp_router_row == NULL) {
         ERRONEOUS_DB_TXN(bgp_router_txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
@@ -12319,7 +12319,7 @@ bgp_route_map_entry_insert_to_route_map(const struct ovsrec_route_map *
     struct ovsrec_route_map_entry  **rt_map_entry_list;
     int i, new_size;
 
-    VLOG_INFO("%s: route-map seq %ld", __FUNCTION__, seq);
+    VLOG_INFO("%s: route-map seq %"PRId64, __FUNCTION__, seq);
     new_size = rt_map_row->n_route_map_entries + 1;
     pref_list = xmalloc(sizeof(int64_t) * new_size);
     rt_map_entry_list = xmalloc(sizeof * rt_map_row->value_route_map_entries *
@@ -12450,7 +12450,7 @@ policy_set_route_map_in_ovsdb(struct vty *vty, const char *name,
     rmp_context.pref = pref;
     strncpy(rmp_context.name, name, sizeof(rmp_context.name));
     strncpy(rmp_context.action, typestr, sizeof(rmp_context.action));
-    vty->index = &rmp_context;
+    vty->index = (uintptr_t)&rmp_context;
     vty->node = RMAP_NODE;
 
     VLOG_INFO("%s: rmp_context.pref %d rmp_context.name %s rmp_context.action %s",
@@ -13678,8 +13678,8 @@ show_prefix_list(afi_t afi, const char *name,
                                             ovs_prefix_list->description,
                                             VTY_NEWLINE);
                                 }
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -13690,7 +13690,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail
                                        && !summary) {
-                                vty_out(vty,"ipv6 prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ipv6 prefix-list %s: %zu entries%s",
                                      ovs_prefix_list->name,
                                      ovs_prefix_list->n_prefix_list_entries,
                                      VTY_NEWLINE);
@@ -13703,7 +13703,7 @@ show_prefix_list(afi_t afi, const char *name,
                             } if ((ovs_prefix_list->
                                 key_prefix_list_entries[j] == seq || seq == 0)
                                 && (!summary)) {
-                                vty_out(vty,"%3sseq %lu %s %s%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13728,8 +13728,8 @@ show_prefix_list(afi_t afi, const char *name,
                                             ovs_prefix_list->description,
                                             VTY_NEWLINE);
                                 }
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -13740,7 +13740,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail && !summary
                                       && strlen(prefix) == 0) {
-                                vty_out(vty,"ipv6 prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ipv6 prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -13755,7 +13755,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 && (!summary) && (!strcmp(ovs_prefix_list->
                                 value_prefix_list_entries[j]->prefix,prefix)
                                 || strlen(prefix) == 0) && (!longer)){
-                                vty_out(vty,"%3sseq %lu %s %s%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13770,7 +13770,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 len = prefix_len(ovs_prefix_list->
                                      value_prefix_list_entries[j]->prefix);
                                 if (len >= plen) {
-                                vty_out(vty,"%3sseq %lu %s %s%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13788,8 +13788,8 @@ show_prefix_list(afi_t afi, const char *name,
                             if (!first && seq == 0 && (detail || summary)) {
                                 vty_out(vty,"ip prefix-list %s:%s",
                                        ovs_prefix_list->name,VTY_NEWLINE);
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -13800,7 +13800,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail
                                        && !summary) {
-                                vty_out(vty,"ip prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ip prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -13808,7 +13808,7 @@ show_prefix_list(afi_t afi, const char *name,
                             } if ((ovs_prefix_list->
                                 key_prefix_list_entries[j] == seq || seq == 0)
                                 && (!summary)) {
-                                vty_out(vty,"%3sseq %lu %s %s%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13837,8 +13837,8 @@ show_prefix_list(afi_t afi, const char *name,
                                             ovs_prefix_list->description,
                                             VTY_NEWLINE);
                                 }
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -13849,7 +13849,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail && !summary
                                      && strlen(prefix) == 0) {
-                                vty_out(vty,"ipv6 prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ipv6 prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -13864,7 +13864,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 && (!summary) && (!strcmp(ovs_prefix_list->
                                 value_prefix_list_entries[j]->prefix,prefix)
                                 || strlen(prefix) == 0) && (!longer)){
-                                vty_out(vty,"%3sseq %lu %s %s ge %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s ge %"PRIu64"%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13882,7 +13882,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 len = prefix_len(ovs_prefix_list->
                                      value_prefix_list_entries[j]->prefix);
                                 if (len >= plen) {
-                                vty_out(vty,"%3sseq %lu %s %s ge %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s ge %"PRIu64"%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13902,8 +13902,8 @@ show_prefix_list(afi_t afi, const char *name,
                             if (!first && seq == 0 && (detail || summary)) {
                                 vty_out(vty,"ip prefix-list %s:%s",
                                        ovs_prefix_list->name,VTY_NEWLINE);
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -13914,7 +13914,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail
                                        && !summary) {
-                                vty_out(vty,"ip prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ip prefix-list %s: %zu entries%s",
                                      ovs_prefix_list->name,
                                      ovs_prefix_list->n_prefix_list_entries,
                                      VTY_NEWLINE);
@@ -13922,7 +13922,7 @@ show_prefix_list(afi_t afi, const char *name,
                             } if ((ovs_prefix_list->
                                 key_prefix_list_entries[j] == seq || seq == 0)
                                 && (!summary)) {
-                                vty_out(vty,"%3sseq %lu %s %s ge %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s ge %"PRIu64"%s","",
                                      ovs_prefix_list->
                                      key_prefix_list_entries[j],
                                      ovs_prefix_list->
@@ -13952,8 +13952,8 @@ show_prefix_list(afi_t afi, const char *name,
                                             ovs_prefix_list->description,
                                             VTY_NEWLINE);
                                 }
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -13964,7 +13964,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail && !summary
                                       && strlen(prefix) == 0) {
-                                vty_out(vty,"ipv6 prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ipv6 prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -13979,7 +13979,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 && (!summary) && (!strcmp(ovs_prefix_list->
                                 value_prefix_list_entries[j]->prefix,prefix)
                                 || strlen(prefix) == 0) && (!longer)) {
-                                vty_out(vty,"%3sseq %lu %s %s le %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s le %"PRIu64"%s","",
                                     ovs_prefix_list->
                                     key_prefix_list_entries[j],
                                     ovs_prefix_list->
@@ -13997,7 +13997,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 len = prefix_len(ovs_prefix_list->
                                      value_prefix_list_entries[j]->prefix);
                                 if (len >= plen) {
-                                vty_out(vty,"%3sseq %lu %s %s le %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s le %"PRIu64"%s","",
                                     ovs_prefix_list->
                                     key_prefix_list_entries[j],
                                     ovs_prefix_list->
@@ -14017,8 +14017,8 @@ show_prefix_list(afi_t afi, const char *name,
                             if (!first && seq == 0 && (detail || summary)) {
                                 vty_out(vty,"ip prefix-list %s:%s",
                                        ovs_prefix_list->name,VTY_NEWLINE);
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -14029,7 +14029,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail
                                 && !summary) {
-                                vty_out(vty,"ip prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ip prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -14037,7 +14037,7 @@ show_prefix_list(afi_t afi, const char *name,
                             } if ((ovs_prefix_list->
                                 key_prefix_list_entries[j] == seq || seq == 0)
                                 && (!summary)) {
-                                vty_out(vty,"%3sseq %lu %s %s le %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s le %"PRIu64"%s","",
                                     ovs_prefix_list->
                                     key_prefix_list_entries[j],
                                     ovs_prefix_list->
@@ -14064,8 +14064,8 @@ show_prefix_list(afi_t afi, const char *name,
                                             ovs_prefix_list->description,
                                             VTY_NEWLINE);
                                 }
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -14076,7 +14076,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail && !summary
                                       && strlen(prefix) == 0) {
-                                vty_out(vty,"ipv6 prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ipv6 prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -14091,7 +14091,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 && (!summary)  && (!strcmp(ovs_prefix_list->
                                 value_prefix_list_entries[j]->prefix,prefix)
                                 || strlen(prefix) == 0) && (!longer)) {
-                                vty_out(vty,"%3sseq %lu %s %s ge %lu le %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s ge %"PRIu64" le %"PRIu64"%s","",
                                     ovs_prefix_list->
                                     key_prefix_list_entries[j],
                                     ovs_prefix_list->
@@ -14110,7 +14110,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 len = prefix_len(ovs_prefix_list->
                                      value_prefix_list_entries[j]->prefix);
                                 if (len >= plen) {
-                                vty_out(vty,"%3sseq %lu %s %s ge %lu le %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s ge %"PRIu64" le %"PRIu64"%s","",
                                     ovs_prefix_list->
                                     key_prefix_list_entries[j],
                                     ovs_prefix_list->
@@ -14132,8 +14132,8 @@ show_prefix_list(afi_t afi, const char *name,
                             if (!first && seq == 0 && (detail || summary)) {
                                 vty_out(vty,"ip prefix-list %s:%s",
                                        ovs_prefix_list->name,VTY_NEWLINE);
-                                vty_out(vty,"%3scount: %lu,"
-                                       " sequences: %lu - %lu%s","",
+                                vty_out(vty,"%3scount: %zu,"
+                                       " sequences: %"PRIu64" - %"PRIu64"%s","",
                                        ovs_prefix_list->n_prefix_list_entries,
                                        ovs_prefix_list->
                                        key_prefix_list_entries[0],
@@ -14144,7 +14144,7 @@ show_prefix_list(afi_t afi, const char *name,
                                 first = true;
                             } else if (!first && seq == 0 && !detail
                                        && !summary) {
-                                vty_out(vty,"ip prefix-list %s: %lu entries%s",
+                                vty_out(vty,"ip prefix-list %s: %zu entries%s",
                                         ovs_prefix_list->name,
                                         ovs_prefix_list->n_prefix_list_entries,
                                         VTY_NEWLINE);
@@ -14152,7 +14152,7 @@ show_prefix_list(afi_t afi, const char *name,
                             } if (( ovs_prefix_list->
                                 key_prefix_list_entries[j] == seq || seq == 0)
                                 && (!summary)) {
-                                vty_out(vty,"%3sseq %lu %s %s ge %lu le %lu%s","",
+                                vty_out(vty,"%3sseq %"PRIu64" %s %s ge %"PRIu64" le %"PRIu64"%s","",
                                     ovs_prefix_list->
                                     key_prefix_list_entries[j],
                                     ovs_prefix_list->

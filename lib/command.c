@@ -3567,7 +3567,7 @@ cmd_execute_command_real (vector vline,
           {
               VTYSH_OVSDB_LOCK;
               strcpy(ifnumber, temp->value);
-              vty->index = ifnumber;
+              vty->index = (uintptr_t)ifnumber;
               if ((((matched_element->attr) & CMD_ATTR_NON_IDL_CMD) == CMD_ATTR_NON_IDL_CMD)
                      || (vtysh_chk_for_system_configured_db_is_ready() == true)) {
                   ret = (*matched_element->func) (matched_element, vty, 0, argc, argv);
@@ -3577,7 +3577,7 @@ cmd_execute_command_real (vector vline,
               AUDIT_LOG_USER_MSG(vty, cfgdata, ret);
               temp = temp->link;
               VTYSH_OVSDB_UNLOCK;
-              if (vty->index == NULL)
+              if (vty->index == (uintptr_t)NULL)
                   break;
           }
       }
@@ -3605,7 +3605,7 @@ cmd_execute_command_real (vector vline,
           while (temp != NULL)
           {
               strcpy(ifnumber, temp->value);
-              vty->index = ifnumber;
+              vty->index = (uintptr_t)ifnumber;
               if (((matched_element->attr) & CMD_ATTR_NON_IDL_CMD) == CMD_ATTR_NON_IDL_CMD) {
                   ready = true;
               } else {
@@ -3621,7 +3621,7 @@ cmd_execute_command_real (vector vline,
               }
               AUDIT_LOG_USER_MSG(vty, cfgdata, ret);
               temp = temp->link;
-              if (vty->index == NULL)
+              if (vty->index == (uintptr_t)NULL)
                   break;
           }
       }
@@ -3984,7 +3984,7 @@ DEFUN_NON_IDL (config_exit,
     default:
       break;
     }
-    vty->index = NULL;
+    vty->index = (uintptr_t)NULL;
     vty->index_list = cmd_free_memory_range_list (vty->index_list);;
   return CMD_SUCCESS;
 }
