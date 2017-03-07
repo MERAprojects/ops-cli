@@ -6789,6 +6789,35 @@ DEFUN(address_family_ipv6_safi,
     return CMD_SUCCESS;
 }
 
+static bool
+validate_bgp_clear_counters (int clear_bgp_neighbor_table_requested,
+                             int clear_bgp_neighbor_table_performed)
+{
+    if ((clear_bgp_neighbor_table_requested <
+         clear_bgp_neighbor_table_performed)) {
+        VLOG_DBG("Counter for requested clear bgp neighbor table %d"
+                 "lags counter for performed clear bgp neighbor"
+                 "table %d by %d\n", clear_bgp_neighbor_table_requested,
+                 clear_bgp_neighbor_table_performed,
+                 clear_bgp_neighbor_table_performed -
+                 clear_bgp_neighbor_table_requested);
+        return false;
+    }
+
+    if (clear_bgp_neighbor_table_requested
+        > clear_bgp_neighbor_table_performed) {
+        VLOG_DBG("Counter for requested clear bgp neighbor table %d"
+                 "exceeds counter for performed clear bgp neighbor"
+                 "table %d by %d\n", clear_bgp_neighbor_table_requested,
+                 clear_bgp_neighbor_table_performed,
+                 clear_bgp_neighbor_table_requested -
+                 clear_bgp_neighbor_table_performed);
+        return false;
+    }
+
+    return true;
+}
+
 DEFUN(clear_ip_bgp_all,
       clear_ip_bgp_all_cmd,
       "clear ip bgp *",
@@ -6797,8 +6826,97 @@ DEFUN(clear_ip_bgp_all,
       BGP_STR
       "Clear all peers\n")
 {
-    report_unimplemented_command(vty, argc, argv);
-    return CMD_SUCCESS;
+    const struct ovsrec_bgp_router *row = NULL;
+    const struct ovsrec_bgp_neighbor *neighbor_row = NULL;
+    enum ovsdb_idl_txn_status status;
+    struct ovsdb_idl_txn *status_txn = cli_do_config_start();
+    int clear_bgp_neighbor_table_requested = 0;
+    int clear_bgp_neighbor_table_performed = 0;
+    char buffer[BUF_LEN] = {0};
+    struct smap smap_status;
+    int j;
+
+    VLOG_DBG("clear_bgp_all \n");
+
+    if(NULL == status_txn)
+    {
+        VLOG_ERR(OVSDB_TXN_CREATE_ERROR);
+        cli_do_config_abort(status_txn);
+        return CMD_OVSDB_FAILURE;
+    }
+
+    row = ovsrec_bgp_router_first(idl);
+
+    if(!row)
+    {
+        VLOG_ERR(OVSDB_ROW_FETCH_ERROR);
+        VLOG_DBG("BGP router row does not exist\n");
+        vty_out(vty, "%%BGP router does not exist%s", VTY_NEWLINE);
+        cli_do_config_abort(status_txn);
+        return CMD_OVSDB_FAILURE;
+    }
+
+    for (j = 0; j < row->n_bgp_neighbors; j++) {
+        VLOG_DBG("Processing clear all request"
+                 " for neighbor %s\n",
+                 row->key_bgp_neighbors[j]);
+
+        neighbor_row = row->value_bgp_neighbors[j];
+        if (neighbor_row->bgp_peer_group) {
+            VLOG_DBG("Skipping clear all soft in request"
+                     " for neighbor %s since it's part of"
+                     " peer group\n",
+                     row->key_bgp_neighbors[j]);
+            continue;
+        }
+        clear_bgp_neighbor_table_requested =
+            smap_get_int(&neighbor_row->status,
+	    OVSDB_BGP_NEIGHBOR_CLEAR_COUNTERS_HARD_REQUESTED,
+            0);
+
+        clear_bgp_neighbor_table_performed =
+            smap_get_int(&neighbor_row->status,
+            OVSDB_BGP_NEIGHBOR_CLEAR_COUNTERS_HARD_PERFORMED,
+            0);
+
+        VLOG_DBG("Read request count %d, Performed count %d\n",
+                 clear_bgp_neighbor_table_requested,
+                 clear_bgp_neighbor_table_performed);
+
+        if (validate_bgp_clear_counters(clear_bgp_neighbor_table_requested,
+                                        clear_bgp_neighbor_table_performed)
+                                        == false) {
+            cli_do_config_abort(status_txn);
+            return CMD_OVSDB_FAILURE;
+        }
+
+        clear_bgp_neighbor_table_requested++;
+        snprintf(buffer, BUF_LEN-1, "%d",
+                 clear_bgp_neighbor_table_requested);
+        smap_clone(&smap_status, &neighbor_row->status);
+        smap_replace(&smap_status,
+                     OVSDB_BGP_NEIGHBOR_CLEAR_COUNTERS_HARD_REQUESTED,
+                     buffer);
+        ovsrec_bgp_neighbor_set_status(neighbor_row, &smap_status);
+        smap_destroy(&smap_status);
+        VLOG_DBG("Write request count %d, performed count %d\n",
+                 clear_bgp_neighbor_table_requested,
+                 clear_bgp_neighbor_table_performed);
+    }
+
+    status = cli_do_config_finish(status_txn);
+
+    if(status == TXN_SUCCESS || status == TXN_UNCHANGED)
+    {
+        VLOG_DBG("Successful transaction for clear bgp all\n");
+    }
+    else
+    {
+        VLOG_ERR(OVSDB_TXN_COMMIT_ERROR);
+        VLOG_ERR("Error in transaction for clear bgp all\n");
+        return CMD_OVSDB_FAILURE;
+    }
+     return CMD_SUCCESS;
 }
 
 ALIAS(clear_ip_bgp_all,
@@ -7058,36 +7176,6 @@ ALIAS(clear_ip_bgp_all_vpnv4_soft_out,
       "Address family\n"
       "Address family modifier\n"
       "Soft reconfig outbound update\n")
-
-static bool
-validate_bgp_clear_counters (int clear_bgp_neighbor_table_requested,
-                             int clear_bgp_neighbor_table_performed)
-{
-    if ((clear_bgp_neighbor_table_requested <
-         clear_bgp_neighbor_table_performed)) {
-        VLOG_DBG("Counter for requested clear bgp neighbor table %d"
-                 "lags counter for performed clear bgp neighbor"
-                 "table %d by %d\n", clear_bgp_neighbor_table_requested,
-                 clear_bgp_neighbor_table_performed,
-                 clear_bgp_neighbor_table_performed -
-                 clear_bgp_neighbor_table_requested);
-        return false;
-    }
-
-    if (clear_bgp_neighbor_table_requested
-        > clear_bgp_neighbor_table_performed) {
-        VLOG_DBG("Counter for requested clear bgp neighbor table %d"
-                 "exceeds counter for performed clear bgp neighbor"
-                 "table %d by %d\n", clear_bgp_neighbor_table_requested,
-                 clear_bgp_neighbor_table_performed,
-                 clear_bgp_neighbor_table_requested -
-                 clear_bgp_neighbor_table_performed);
-        return false;
-    }
-
-    return true;
-}
-
 
 DEFUN(clear_bgp_all_soft_out,
       clear_bgp_all_soft_out_cmd,
@@ -11530,6 +11618,9 @@ bgp_vty_init(void)
     install_element(ENABLE_NODE, &clear_bgp_peer_group_out_cmd);
     install_element(ENABLE_NODE, &clear_bgp_as_soft_out_cmd);
     install_element(ENABLE_NODE, &clear_bgp_as_out_cmd);
+
+    install_element(ENABLE_NODE, &clear_ip_bgp_all_cmd);
+    install_element(ENABLE_NODE, &clear_bgp_all_cmd);
 
     /* "Show ip bgp summary" commands. */
     install_element(VIEW_NODE, &show_ip_bgp_summary_cmd);
