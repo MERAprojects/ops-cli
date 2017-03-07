@@ -188,7 +188,7 @@ DEFUN (vtysh_loopback_interface,
         }
     }
 
-    vty->index = ifname;
+    vty->index = (uintptr_t)ifname;
     vty->node = LOOPBACK_INTERFACE_NODE;
 
     return CMD_SUCCESS;
@@ -746,7 +746,7 @@ DEFUN (cli_loopback_if_vrf_add_port,
     "Attach Loopback Interface to VRF\n"
     "VRF name\n")
 {
-  return vrf_add_port((char*) vty->index, argv[0]);
+  return vrf_add_port((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_loopback_if_vrf_del_port,
@@ -757,7 +757,7 @@ DEFUN (cli_loopback_if_vrf_del_port,
     "Detach Loopback Interface from VRF\n"
     "VRF name\n")
 {
-  return vrf_del_port((char*) vty->index, argv[0]);
+  return vrf_del_port((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_loopback_if_config_ip4,
@@ -767,7 +767,7 @@ DEFUN (cli_loopback_if_config_ip4,
         "Set IP address\n"
         "Interface IP address\n")
 {
-    return loopback_if_config_ip((char*) vty->index, argv[0]);
+    return loopback_if_config_ip((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_loopback_if_del_ip4,
@@ -778,7 +778,7 @@ DEFUN (cli_loopback_if_del_ip4,
         "Set IP address\n"
         "Interface IP address\n")
 {
-    return loopback_if_del_ip4((char*) vty->index, argv[0]);
+    return loopback_if_del_ip4((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_loopback_if_config_ipv6,
@@ -788,7 +788,7 @@ DEFUN (cli_loopback_if_config_ipv6,
         "Set IP address\n"
         "Interface IPv6 address\n")
 {
-    return loopback_if_config_ipv6((char*) vty->index, argv[0]);
+    return loopback_if_config_ipv6((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (cli_loopback_if_del_ipv6,
@@ -799,7 +799,7 @@ DEFUN (cli_loopback_if_del_ipv6,
         "Set IP address\n"
         "Interface IP address\n")
 {
-    return loopback_if_del_ipv6((char*) vty->index, argv[0]);
+    return loopback_if_del_ipv6((char*)((uintptr_t)vty->index), argv[0]);
 }
 
 DEFUN (vtysh_del_loopback_interface,

@@ -187,10 +187,10 @@ cli_command_result (enum ovsdb_idl_txn_status status)
 
 
 #define OSPF_IP_STRING_CONVERT(string, ip) snprintf(string, 15, "%i.%i.%i.%i",\
-                                          ((ip) >> 24) & 0xFF,               \
-                                          ((ip) >> 16) & 0xFF,               \
-                                          ((ip) >> 8) & 0xFF,                \
-                                          ((ip) & 0xFF));
+                                          (int)(((ip) >> 24) & 0xFF),               \
+                                          (int)(((ip) >> 16) & 0xFF),               \
+                                          (int)(((ip) >> 8) & 0xFF),                \
+                                          (int)(((ip) & 0xFF)));
 
 /* Macros. */
 #define OSPF_GET_AREA_ID(V, STR)                                              \

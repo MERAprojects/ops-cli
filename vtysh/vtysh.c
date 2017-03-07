@@ -371,10 +371,10 @@ vtysh_execute_func (const char *line, int pager)
          && vty->node > CONFIG_NODE)
    {
        temp_list = vty->index_list;
-       temp_index = vty->index;
+       temp_index = (char*)((uintptr_t)vty->index);
 
        vty->index_list = NULL;
-       vty->index = NULL;
+       vty->index = (uintptr_t)NULL;
    }
 
    while (ret != CMD_SUCCESS && ret != CMD_SUCCESS_DAEMON && ret != CMD_WARNING
@@ -428,7 +428,7 @@ vtysh_execute_func (const char *line, int pager)
    if (ret != CMD_SUCCESS && tried)
    {
        vty->index_list = temp_list;
-       vty->index = temp_index;
+       vty->index = (uintptr_t)temp_index;
        vty->node = saved_node;
        ret = saved_ret;
    }
@@ -4037,7 +4037,7 @@ DEFUN (vtysh_show_session_timeout_cli,
 {
     int64_t timeout_period = vtysh_ovsdb_session_timeout_get();
 
-    vty_out(vty, "session-timeout: %lu minute", timeout_period);
+    vty_out(vty, "session-timeout: %"PRIu64" minute", timeout_period);
     if (timeout_period > 1)
         vty_out(vty, "s");
     if (timeout_period != DEFAULT_SESSION_TIMEOUT_PERIOD)

@@ -488,7 +488,7 @@ DEFUN (interface_desc,
   if (argc == 0)
     return CMD_SUCCESS;
 
-  ifp = vty->index;
+  ifp = (struct interface *)((uintptr_t)vty->index);
   if (ifp->desc)
     XFREE (MTYPE_TMP, ifp->desc);
   ifp->desc = argv_concat(argv, argc, 0);
@@ -504,7 +504,7 @@ DEFUN (no_interface_desc,
 {
   struct interface *ifp;
 
-  ifp = vty->index;
+  ifp = (struct interface *)((uintptr_t)vty->index);
   if (ifp->desc)
     XFREE (MTYPE_TMP, ifp->desc);
   ifp->desc = NULL;
@@ -577,7 +577,7 @@ DEFUN (interface,
   ifp = if_get_by_name_len(argv[0], sl);
 #endif /* SUNOS_5 */
 
-  vty->index = ifp;
+  vty->index = (uintptr_t)ifp;
   vty->node = INTERFACE_NODE;
 
   return CMD_SUCCESS;
