@@ -454,6 +454,20 @@ get_bgp_peer_group_with_bgp_router_and_name(const struct ovsrec_bgp_router *
     return find_matching_neighbor_or_peer_group_object(true, ovs_bgpr, name);
 }
 
+static bool
+compare_neighbor_remote_as_with_asn(const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor,
+                                    int64_t asn)
+{
+  if ((ovs_bgp_neighbor->n_remote_as > 0) && ovs_bgp_neighbor->remote_as)
+  {
+    if (*ovs_bgp_neighbor->remote_as == asn)
+    {
+      return true;
+    }
+  }
+  return false;
+}
+
 /*
  * Find the bgp peer group with matching bgp_router and asn
  */
@@ -474,11 +488,8 @@ get_bgp_neighbor_with_bgp_router_and_asn(const struct ovsrec_bgp_router *
         if (ovs_bgpr->value_bgp_neighbors) {
             neighbor_row = ovs_bgpr->value_bgp_neighbors[i];
             if (neighbor_row) {
-                if ((neighbor_row->n_remote_as > 0) &&
-                    neighbor_row->remote_as) {
-                    if (*neighbor_row->remote_as == asn) {
-                        return neighbor_row;
-                    }
+                if(compare_neighbor_remote_as_with_asn(neighbor_row, asn)) {
+                    return neighbor_row;
                 }
             }
         }
@@ -2697,16 +2708,33 @@ bgp_neighbor_peer_group_insert_to_bgp_router(const struct ovsrec_bgp_router *
 
 static bool
 is_ibgp_peer(const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor,
-             int64_t asn_own)
+             int64_t own_asn)
 {
-  if ((ovs_bgp_neighbor->n_remote_as > 0) && ovs_bgp_neighbor->remote_as)
-  {
-    if (*ovs_bgp_neighbor->remote_as == asn_own)
-    {
-      return true;
+  return compare_neighbor_remote_as_with_asn(ovs_bgp_neighbor, own_asn);
+}
+
+void
+remove_parameters_invalid_for_ibgp_peer(const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor)
+{
+    if (ovs_bgp_neighbor->n_remove_private_as) {
+        ovsrec_bgp_neighbor_set_remove_private_as(ovs_bgp_neighbor, NULL, 0);
     }
-  }
-  return false;
+
+    if (ovs_bgp_neighbor->n_local_as) {
+        ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, NULL, 0);
+    }
+}
+
+bool
+is_member_of_peer_group(const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor,
+                        const struct ovsrec_bgp_neighbor *ovs_peer_grp)
+{
+    if (object_is_bgp_neighbor(ovs_bgp_neighbor)) {
+        if (ovs_bgp_neighbor->bgp_peer_group == ovs_peer_grp) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /*
@@ -2787,24 +2815,21 @@ cli_neighbor_remote_as_cmd_execute(char *vrf_name, struct vty *vty,
 
     ovsrec_bgp_neighbor_set_remote_as(ovs_bgp_neighbor, &remote_as, 1);
 
-    if (ovs_bgp_neighbor->remove_private_as && is_ibgp_peer(ovs_bgp_neighbor, asn))
-    {
-        ovsrec_bgp_neighbor_set_remove_private_as(ovs_bgp_neighbor, NULL, 0);
+    if (is_ibgp_peer(ovs_bgp_neighbor, asn)) {
+        remove_parameters_invalid_for_ibgp_peer(ovs_bgp_neighbor);
     }
+
 /*
  * If we are a peer group whose remote-as has just been set or changed,
  * update the remote-as of all the peers bound to this peer group.
  */
     if (update_all_peers) {
         OVSREC_BGP_NEIGHBOR_FOR_EACH(ovs_bgp_neighbor, idl) {
-            if (object_is_bgp_neighbor(ovs_bgp_neighbor)) {
-                if (ovs_bgp_neighbor->bgp_peer_group == ovs_peer_grp) {
-                    ovsrec_bgp_neighbor_set_remote_as(ovs_bgp_neighbor,
-                                                      &remote_as, 1);
-		    if (ovs_bgp_neighbor->remove_private_as && is_ibgp_peer(ovs_bgp_neighbor, asn))
-                    {
-                        ovsrec_bgp_neighbor_set_remove_private_as(ovs_bgp_neighbor, NULL, 0);
-                    }
+            if (is_member_of_peer_group(ovs_bgp_neighbor, ovs_peer_grp)) {
+                ovsrec_bgp_neighbor_set_remote_as(ovs_bgp_neighbor,
+                                                  &remote_as, 1);
+                if (is_ibgp_peer(ovs_bgp_neighbor, asn)) {
+                    remove_parameters_invalid_for_ibgp_peer(ovs_bgp_neighbor);
                 }
             }
         }
@@ -3237,6 +3262,123 @@ DEFUN(no_neighbor_peer_group_remote_as,
     return CMD_SUCCESS;
 }
 
+static int
+cli_neighbor_local_as_cmd_execute(char *vrf_name, const char *argv[])
+{
+    const char *peer_str = argv[0];
+    int64_t local_as = strtoll(argv[1], NULL, 10);
+    const struct ovsrec_bgp_router *bgp_router_context;
+    const struct ovsrec_vrf *vrf_row;
+    const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor, *ovs_peer_grp;
+    struct ovsdb_idl_txn *txn;
+    int64_t asn = (int64_t)vty->index;
+
+    START_DB_TXN(txn);
+
+    vrf_row = get_ovsrec_vrf_with_name(vrf_name);
+    if (!vrf_row) {
+        ERRONEOUS_DB_TXN(txn, BGP_ERR_NO_VRF_FOUND);
+    }
+
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, asn);
+    if (!bgp_router_context) {
+        ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
+    }
+
+    ovs_bgp_neighbor =
+    get_bgp_peer_group_with_bgp_router_and_name(bgp_router_context, peer_str);
+    if (!ovs_bgp_neighbor) {
+        ABORT_DB_TXN(txn, BGP_ERR_NEIGHBOR_IS_NOT_CONFIGURED);
+    }
+
+    if(ovs_bgp_neighbor->bgp_peer_group) {
+        ABORT_DB_TXN(txn, BGP_ERR_INVALID_FOR_PEER_GROUP_MEMBER);
+    }
+
+    if (is_ibgp_peer(ovs_bgp_neighbor, asn)) {
+        ABORT_DB_TXN(txn, BGP_ERR_LOCAL_AS_ALLOWED_ONLY_FOR_EBGP);
+    }
+
+    if (local_as == asn) {
+        ABORT_DB_TXN(txn, BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_AS);
+    }
+
+    if (compare_neighbor_remote_as_with_asn(ovs_bgp_neighbor, local_as)) {
+        ABORT_DB_TXN(txn, BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_REMOTE_AS);
+    }
+
+    if (object_is_peer_group(ovs_bgp_neighbor)) {
+        ovs_peer_grp = ovs_bgp_neighbor;
+
+        OVSREC_BGP_NEIGHBOR_FOR_EACH(ovs_bgp_neighbor, idl) {
+            if (is_member_of_peer_group(ovs_bgp_neighbor, ovs_peer_grp) &&
+                compare_neighbor_remote_as_with_asn(ovs_bgp_neighbor, local_as))
+            {
+                ABORT_DB_TXN(txn, BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_REMOTE_AS);
+            }
+        }
+
+        OVSREC_BGP_NEIGHBOR_FOR_EACH(ovs_bgp_neighbor, idl) {
+            if (is_member_of_peer_group(ovs_bgp_neighbor, ovs_peer_grp) &&
+                !is_ibgp_peer(ovs_bgp_neighbor, asn))
+            {
+                ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, &local_as, 1);
+            }
+        }
+        ovs_bgp_neighbor = ovs_peer_grp;
+    }
+
+    ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, &local_as, 1);
+
+    END_DB_TXN(txn);
+}
+
+static int
+cli_no_neighbor_local_as_cmd_execute(char *vrf_name, const char *argv[])
+{
+    const char *peer_str = argv[0];
+    const struct ovsrec_bgp_router *bgp_router_context;
+    const struct ovsrec_vrf *vrf_row;
+    const struct ovsrec_bgp_neighbor *ovs_bgp_neighbor, *ovs_peer_grp;
+    struct ovsdb_idl_txn *txn;
+    int64_t asn = (int64_t)vty->index;
+
+    START_DB_TXN(txn);
+
+    vrf_row = get_ovsrec_vrf_with_name(vrf_name);
+    if (!vrf_row) {
+        ERRONEOUS_DB_TXN(txn, BGP_ERR_NO_VRF_FOUND);
+    }
+
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, asn);
+    if (!bgp_router_context) {
+        ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
+    }
+
+    ovs_bgp_neighbor =
+    get_bgp_peer_group_with_bgp_router_and_name(bgp_router_context, peer_str);
+    if (!ovs_bgp_neighbor) {
+        ABORT_DB_TXN(txn, BGP_ERR_NEIGHBOR_IS_NOT_CONFIGURED);
+    }
+
+    if(ovs_bgp_neighbor->bgp_peer_group) {
+        ABORT_DB_TXN(txn, BGP_ERR_INVALID_FOR_PEER_GROUP_MEMBER);
+    }
+
+    ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, NULL, 0);
+
+    if (object_is_peer_group(ovs_bgp_neighbor)) {
+        ovs_peer_grp = ovs_bgp_neighbor;
+        OVSREC_BGP_NEIGHBOR_FOR_EACH(ovs_bgp_neighbor, idl) {
+            if (is_member_of_peer_group(ovs_bgp_neighbor, ovs_peer_grp)) {
+                ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, NULL, 0);
+            }
+        }
+    }
+
+    END_DB_TXN(txn);
+}
+
 DEFUN(neighbor_local_as,
       neighbor_local_as_cmd,
       NEIGHBOR_CMD2 "local-as " CMD_AS_RANGE,
@@ -3245,8 +3387,7 @@ DEFUN(neighbor_local_as,
       "Specify a local-as number\n"
       "AS number used as local AS\n")
 {
-    report_unimplemented_command(vty, argc, argv);
-    return CMD_SUCCESS;
+    return cli_neighbor_local_as_cmd_execute(NULL, argv);
 }
 
 DEFUN(neighbor_local_as_no_prepend,
@@ -3283,8 +3424,7 @@ DEFUN(no_neighbor_local_as,
       NEIGHBOR_ADDR_STR2
       "Specify a local-as number\n")
 {
-    report_unimplemented_command(vty, argc, argv);
-    return CMD_SUCCESS;
+    return cli_no_neighbor_local_as_cmd_execute(NULL, argv);
 }
 
 ALIAS(no_neighbor_local_as,
@@ -3451,6 +3591,7 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
     struct ovsdb_idl_txn *txn;
     char *key_timers[2];
     timer_val_t  tim_val;
+    int64_t asn = (int64_t)vty->index;
 
     START_DB_TXN(txn);
 
@@ -3460,8 +3601,7 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
     }
 
     /* This *MUST* be already available. */
-    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row,
-                                                        (int64_t)vty->index);
+    bgp_router_context = get_ovsrec_bgp_router_with_asn(vrf_row, asn);
     if (!bgp_router_context) {
         ERRONEOUS_DB_TXN(txn, BGP_ERR_ROUTER_IS_NOT_CONFIGURED);
     }
@@ -3529,6 +3669,15 @@ cli_neighbor_set_peer_group_cmd_execute(char *vrf_name, const char *ip_addr,
 	                               (int64_t *)&tim_val, ovs_bgp_peer_group->n_timers);
     }
 
+    if (ovs_bgp_peer_group->n_local_as &&
+        !is_ibgp_peer(ovs_bgp_neighbor, asn) &&
+        *ovs_bgp_neighbor->remote_as != *ovs_bgp_peer_group->local_as) {
+        ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, ovs_bgp_peer_group->local_as, 1);
+    }
+    else {
+        ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, NULL, 0);
+    }
+
     /* Make this peer bound to the peer group. */
     ovsrec_bgp_neighbor_set_bgp_peer_group(ovs_bgp_neighbor,
                                            ovs_bgp_peer_group);
@@ -3591,8 +3740,11 @@ cli_no_neighbor_set_peer_group_cmd_execute(char *vrf_name,
             ovsrec_bgp_neighbor_delete(ovs_bgp_neighbor);
         } else {
             ovsrec_bgp_neighbor_set_bgp_peer_group(ovs_bgp_neighbor, NULL);
-        }
 
+            if (ovs_bgp_neighbors_peer_group->n_local_as) {
+                ovsrec_bgp_neighbor_set_local_as(ovs_bgp_neighbor, NULL, 0);
+            }
+        }
     } else {
         ABORT_DB_TXN(txn, BGP_ERR_NEIGHBOR_NOT_IN_PEER_GROUP);
     }

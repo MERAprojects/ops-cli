@@ -195,11 +195,21 @@ static void vtysh_router_context_bgp_print_nbr_cfg(vtysh_ovsdb_cbmsg_ptr p_msg,
 
     if (nbr_table->update_source) {
         if (!pgroup_ptr ||
-            strcmp(nbr_table->update_source, pgroup_ptr->update_source)  != 0){
+            strcmp(nbr_table->update_source, pgroup_ptr->update_source) != 0){
             vtysh_ovsdb_cli_print(p_msg,"%4s %s %s %s %s", "", "neighbor",
                                  neighbor,
                                  "update-source",
                                  (nbr_table->update_source));
+        }
+    }
+
+    if (nbr_table->n_local_as) {
+        if (!pgroup_ptr ||
+            *(nbr_table->local_as) != *(pgroup_ptr->local_as)){
+            vtysh_ovsdb_cli_print(p_msg,"%4s %s %s %s %lu", "", "neighbor",
+                                 neighbor,
+                                 "local-as",
+                                 *(nbr_table->local_as));
         }
     }
 }

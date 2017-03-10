@@ -41,7 +41,7 @@
 /* BGP error codes.  */
 #define BGP_ERR_NO_VRF_FOUND                        "% VRF is not found"
 #define BGP_ERR_ROUTER_IS_NOT_CONFIGURED            "% BGP router is not configured"
-#define BGP_ERR_NEIGHBOR_IS_NOT_CONFIGURED          "% Neighbor is not configured"
+#define BGP_ERR_NEIGHBOR_IS_NOT_CONFIGURED          "% Neighbor is not configured. Specify remote-AS or peer-group commands first"
 #define BGP_ERR_COMMAND_EXIST                       "% Command exists"
 #define BGP_ERR_COMMAND_NOT_EXIST                   "% Command does not exist"
 #define BGP_ERR_PEER_GROUP_IS_NOT_CREATED           "% Peer group does not exist. Create the peer-group first"
@@ -59,6 +59,10 @@
 #define BGP_ERR_NO_ROUTE_MAP_ENTRY                  "% Route-map entry is not found"
 #define BGP_ERR_NO_COMMUNITY_FILTER_LIST            "% Community-filter list is not found"
 #define BGP_ERR_EBGP_MULTIHOP_TTL_SECURITY_CONFIG   "% Can't configure ebgp-multihop and ttl-security at the same time"
+#define BGP_ERR_LOCAL_AS_ALLOWED_ONLY_FOR_EBGP      "% Local-as allowed only for EBGP peers"
+#define BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_AS        "% Cannot have local-as same as BGP AS number"
+#define BGP_ERR_CANNOT_HAVE_LOCAL_AS_SAME_REMOTE_AS "% Cannot have local-as same as neighbor remote AS number"
+#define BGP_ERR_INVALID_FOR_PEER_GROUP_MEMBER       "% Invalid command for a peer-group member"
 
 /*
 ** depending on the outcome of the db transaction, returns
