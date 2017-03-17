@@ -6062,7 +6062,7 @@ ospf_lsa_detail_show(const struct ovsrec_ospf_lsa  *lsa_row)
                        OSPF_DEFAULT_NULL_STR, VTY_NEWLINE);
    }
    if (lsa_row->n_chksum > 0)
-       vty_out (vty, "  Checksum: 0x%04"PRIx64"%s",
+       vty_out (vty, "  Checksum: 0x%04x%s",
                         ntohs(*(lsa_row->chksum)),VTY_NEWLINE);
    else
         vty_out(vty, "  Checksum: %s%s",
