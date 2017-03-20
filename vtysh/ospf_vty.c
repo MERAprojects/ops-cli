@@ -2544,7 +2544,7 @@ ospf_vl_interface_one_row_print(struct vty *vty,
     /* Neighbor count and Adjacent neighbor count */
     if (ospf_interface_row->n_neighbors)
         vty_out(vty, "  Neighbor Count is %u, Adjacent neighbor count is %d%s",
-            (ospf_interface_row->n_neighbors - 1), n_adjacent_nbrs, VTY_NEWLINE);
+            (unsigned int)(ospf_interface_row->n_neighbors - 1), n_adjacent_nbrs, VTY_NEWLINE);
     else
         vty_out(vty, "  Neighbor Count is 0, Adjacent neighbor count is %d%s",
                 n_adjacent_nbrs, VTY_NEWLINE);
@@ -3138,7 +3138,7 @@ ospf_interface_one_row_print(struct vty *vty,const char* ifname,
     /* Neighbor count and Adjacent neighbor count */
     if (ospf_interface_row->n_neighbors)
         vty_out(vty, "  Neighbor Count is %u, Adjacent neighbor count is %d%s",
-            (ospf_interface_row->n_neighbors - 1), n_adjacent_nbrs, VTY_NEWLINE);
+            (unsigned int)(ospf_interface_row->n_neighbors - 1), n_adjacent_nbrs, VTY_NEWLINE);
     else
         vty_out(vty, "  Neighbor Count is 0, Adjacent neighbor count is %d%s",
                 n_adjacent_nbrs, VTY_NEWLINE);
